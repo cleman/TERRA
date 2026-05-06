@@ -1,0 +1,68 @@
+# pragma once
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+import json
+
+# The Map class represents a map in the TERRA environment. It loads the map data from a JSON file and provides methods to access the map size, obstacles, and name. It also provides a method to get the figures and axes for plotting the map.
+class Map:
+    # Initialize the map by loading the map data from the mapdata.json file in the map's directory
+    def __init__(self, name):
+        self.name = name
+        self.map_path = f"data/maps/{self.name}"
+        self.map_size = None
+        self.obstacles = None
+        self.load_mapdata()     # load map_size, obstacles
+    
+    # Load map data from the mapdata.json file in the map's directory
+    def load_mapdata(self):
+        # Check if the mapdata.json file exists
+        try:
+            # Load the mapdata.json file
+            with open(f"{self.map_path}/mapdata.json") as f:
+                mapdata = json.load(f)
+            
+            if mapdata["map_name"] != self.name:
+                raise ValueError(f"Map name in mapdata.json does not match the map name: {mapdata['map_name']} != {self.name}")
+            
+            self.map_size = mapdata["map_size"]     # double
+            self.obstacles = mapdata["obstacles"]   # list of list of vertices (x, y)
+        
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Mapdata file not found in {self.map_path}")   
+    
+    # Get the size of the map
+    def get_map_size(self):
+        return self.map_size
+    
+    # Get the list of obstacles, where each obstacle is represented as a list of vertices (x, y)
+    def get_obstacles(self):
+        return self.obstacles
+    
+    # Get the name of the map
+    def get_name(self):
+        return self.name
+    
+    # String representation of the map for debugging purposes
+    def __str__(self):
+        return f"Map(name={self.name}, map_size={self.map_size}, obstacles={self.obstacles})"
+    
+    # Use the string representation of the map for the official representation of the map
+    def __repr__(self):
+        return self.__str__()
+    
+    # Compute the figures and axes of the map for plotting purposes
+    def compute_fig_ax(self):        
+        fig, ax = plt.subplots(figsize=(10, 10))
+        ax.set_xlim(0, self.map_size)
+        ax.set_ylim(0, self.map_size)
+        
+        # Plot the obstacles
+        obstacleLabel = "Obstacle"
+        for obs in self.obstacles:
+            polygon = Polygon(obs, closed=True, fill=True, edgecolor='black', facecolor='gray', label=obstacleLabel)
+            obstacleLabel = "_nolegend_"  # only show the label for the first obstacle
+            ax.add_patch(polygon)
+        
+        self.fig = fig
+        self.ax = ax
+    
