@@ -1,4 +1,5 @@
 from tree import Tree
+from solver import Solver
 
 def main():
     # Create a tree for the "map2" map
@@ -7,10 +8,19 @@ def main():
     #print(tree.map)
     #print(tree)
     tree.generate_discrete_grid(grid_size=20, include_obstacles=True)
-    tree.compute_edges(cMax=30)
-    print(f"Number of edges: {len(tree.get_edges())}")
+    tree.compute_edges(dMax=50)
+    #print(f"Number of edges: {len(tree.get_edges())}")
     #tree.plot(2)
-    tree.plot(3)
+    #tree.plot(3)
+
+    solver = Solver(tree)
+    solver.solve(solver_name="appsi_highs", time_limit=600)
+    print("#" * 50)
+    print("SOLUTION")
+    print("#" * 50)
+    print(solver.get_solution())
+    solver.get_tree().plot(4)
+
 
 if __name__ == "__main__":
     main()

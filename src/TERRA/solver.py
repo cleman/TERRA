@@ -14,7 +14,7 @@ class Solver:
         self.solution = None
         self.cost_matrix = None
 
-        self.build_cost_matrix(tree)
+        self.build_cost_matrix()
 
         self.build_model()
     
@@ -127,3 +127,68 @@ class Solver:
         model.prevent_relay_2cycles = pyo.Constraint(model.N, model.N, rule=prevent_relay_2cycles_rule)
 
         self.model = model
+
+    # Solve the optimization problem using the given solver
+    def solve(self, solver_name="appsi_highs", time_limit=600):
+        self.solver = pyo.SolverFactory(solver_name)
+        self.solver.options["timelimit"] = time_limit
+        self.solution = self.solver.solve(self.model, tee=True)
+
+        self.build_solution_from_result()
+
+    def build_solution_from_result(self):
+        if self.solution is None:
+            raise ValueError("No solution found. Please solve the model first.")
+        
+        relays = []
+        links = []
+        for i in self.model.N:
+            for j in self.model.N:
+                if i != j and self.model.L[i, j].value > 0.5:  # Assuming binary variables, check if the edge is selected
+                    links.append((i, j))
+                    if i > self.tree.get_nb_terminals() and i not in relays:
+                        relays.append(i)
+                    if j > self.tree.get_nb_terminals() and j not in relays:
+                        relays.append(j)
+
+        # Get final objective
+        cost = round(pyo.value(self.model.objective),2)
+        
+        relays.sort()
+        self.solution_out = {
+            "relays": relays,
+            "links": links,
+            "cost": cost
+        }
+
+        self.tree.set_solution(self.solution_out)
+
+    # region GETTERS
+    ## GETTERS ##
+
+    def get_model(self):
+        return self.model
+    
+    def get_cost_matrix(self):
+        return self.cost_matrix
+    
+    def get_solution(self):
+        return self.solution
+    
+    def get_solver(self):
+        return self.solver
+    
+    def get_tree(self):
+        return self.tree
+    # endregion
+
+    # region string representation
+    ## STRING REPRESENTATION ##
+
+    def __str__(self):
+        return f"Solver(tree={self.tree}, model={self.model}, cost_matrix={self.cost_matrix}, solution={self.solution}, solver={self.solver})"
+    
+    def __repr__(self):
+        return self.__str__()
+    # endregion
+

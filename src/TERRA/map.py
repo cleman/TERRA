@@ -12,6 +12,7 @@ class Map:
         self.map_size = None
         self.obstacles = None
         self.load_mapdata()     # load map_size, obstacles
+        self.mapdataIsWritten = False
     
     # Load map data from the mapdata.json file in the map's directory
     def load_mapdata(self):
@@ -26,9 +27,32 @@ class Map:
             
             self.map_size = mapdata["map_size"]     # double
             self.obstacles = mapdata["obstacles"]   # list of list of vertices (x, y)
+            
+            self.mapdataIsWritten = True
         
         except FileNotFoundError:
-            raise FileNotFoundError(f"Mapdata file not found in {self.map_path}")   
+            raise FileNotFoundError(f"Mapdata file not found in {self.map_path}")
+    
+    # Save map data
+    def save_mapdata(self):
+        if self.mapdataIsWritten:
+            return
+        if self.name is None:
+            raise ValueError("Map name is None")
+        if self.map_size is None:
+            raise ValueError("Map size is None")
+        if self.obstacles is None:
+            raise ValueError("Obstacles are None")
+
+        mapdata = {
+            "map_name": self.name,
+            "map_size": self.map_size,
+            "obstacles": self.obstacles
+        }
+        with open(f"{self.map_path}/mapdata.json", "w") as f:
+            json.dump(mapdata, f, indent=2)
+
+        self.mapdataIsWritten = True
     
     # Get the size of the map
     def get_map_size(self):
@@ -51,17 +75,18 @@ class Map:
         return self.__str__()
     
     # Compute the figures and axes of the map for plotting purposes
-    def compute_fig_ax(self):        
+    def compute_fig_ax(self, bool_value, include_obstacles=True):        
         fig, ax = plt.subplots(figsize=(10, 10))
         ax.set_xlim(0, self.map_size)
         ax.set_ylim(0, self.map_size)
         
         # Plot the obstacles
         obstacleLabel = "Obstacle"
-        for obs in self.obstacles:
-            polygon = Polygon(obs, closed=True, fill=True, edgecolor='black', facecolor='gray', label=obstacleLabel)
-            obstacleLabel = "_nolegend_"  # only show the label for the first obstacle
-            ax.add_patch(polygon)
+        if bool_value:
+            for obs in self.obstacles:
+                polygon = Polygon(obs, closed=True, fill=True, edgecolor='black', facecolor='gray', label=obstacleLabel)
+                obstacleLabel = "_nolegend_"  # only show the label for the first obstacle
+                ax.add_patch(polygon)
         
         self.fig = fig
         self.ax = ax
