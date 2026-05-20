@@ -1,6 +1,8 @@
 from tree import Tree
 from solver import Solver
 
+import matplotlib.pyplot as plt
+
 def main():
     # Create a tree for the "map2" map
     tree = Tree("map2")
@@ -19,7 +21,13 @@ def main():
     print("SOLUTION")
     print("#" * 50)
     print(solver.get_solution())
-    solver.get_tree().plot(4)
+
+    tree.local_correction(10, 20, dmin=10, dmax=30, fMax=1000, k=0.001)
+
+    # Plot fig
+    tree.plot([True, True, True, True, True])
+    fig, ax = tree.map.fig, tree.map.ax
+    plt.show()
 
 
 if __name__ == "__main__":

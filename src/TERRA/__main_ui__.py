@@ -4,7 +4,11 @@ from solver import Solver
 from tkinter import *
 from tkinter.messagebox import *
 from tkinter.filedialog import *
+from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
+
+from os import listdir
 
 from Pages.genMapPage import generateMapPage
 from Pages.genGridPage import generateGridPage
@@ -62,7 +66,7 @@ def main():
     grid_page = generateGridPage(tree, toolsFrame, window)
     edges_page = generateEdgesPage(tree, toolsFrame, window)
     solver_page = SolverPage(tree, toolsFrame, window)
-    other_page = otherPage(toolsFrame, window)
+    other_page = otherPage(tree, toolsFrame, window)
 
     toolsFrame.grid_rowconfigure(0, weight=1)
     toolsFrame.grid_columnconfigure(0, weight=1)
@@ -105,11 +109,15 @@ def main():
 
     ### Top bar of the view frame ###
 
+    # Get available maps folder in /Maps
+    maps_list = listdir("data/maps")
+    maps_list.sort()
+
     # Map name entry and buttons
     map_name_label = Label(view_top_bar, text="Map Name:", font=("Arial", 14), bg="white")
     map_name_label.pack(padx=10, pady=10, side=LEFT)
     map_name_value = StringVar(value="map2")
-    map_name_entry = Entry(view_top_bar, width=20, font=("Arial", 14), textvariable=map_name_value)
+    map_name_entry = ttk.Combobox(view_top_bar, width=20, font=("Arial", 14), textvariable=map_name_value, values=maps_list)
     map_name_entry.pack(padx=10, pady=10, side=LEFT)
 
     # Load map
@@ -141,6 +149,12 @@ def main():
 
     def update_map_view():
         global mapPlot
+        # Close previous plot
+        plt.close()
+        if mapPlot is not None:
+            mapPlot.get_tk_widget().destroy()
+        
+
         bool_values = [var.get() for var in view_options_values]
 
         #print("Updating map view with options:")
@@ -182,6 +196,10 @@ def main():
     solver_page.raise_page_var = page_to_raise_int
     solver_page.refresh_callback = update_map_view
 
+    # Other
+    other_page.refresh_callback = update_map_view
+
+    # Update the map view
     update_map_view()
 
     window.mainloop()

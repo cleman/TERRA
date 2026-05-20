@@ -2,13 +2,108 @@ from map import Map
 import json
 import matplotlib.pyplot as plt
 from utils import *
+import math
 
+'''
 # Type of plotting
 EMPTY = 0
 TERMINALS = 1
 CANDIDATES = 2
 CANDIDATES_EDGES = 3
 SOLUTION = 4
+'''
+
+# Structure representing the full solution by itself
+class solutionTree():
+    def __init__(self, tree):
+        self.tree = tree
+
+        self.name = None                     # str
+        self.map_size = None             # double
+        self.obstacles = None           # [ [ (x,y) ] ] : double
+        self.racine = None                   # (x,y) : double
+        self.terminals = None           # [ (x,y) ] : double
+        self.relays = None             # [ (x,y) ] : double
+        self.links = None              # [ (int, int, double)]
+        self.cost = None            # double
+
+        self.update()
+        
+    
+    def load(self, jsonSol):
+        self.name = jsonSol["map_name"]
+        self.map_size = jsonSol["map_size"]
+        self.obstacles = jsonSol["obstacles"]
+        self.racine = jsonSol["racine"]
+        self.terminals = jsonSol["terminals"]
+        self.relays = jsonSol["relays"]
+        self.links = jsonSol["links"]
+        self.cost = jsonSol["cost"]
+    
+    def save(self):
+        output = {
+            "map_name": self.name,
+            "map_size": self.map_size,
+            "obstacles": self.obstacles,
+            "racine": self.racine,
+            "terminals": self.terminals,
+            "relays": self.relays,
+            "links": self.links,
+            "cost": self.cost
+        }
+        return output
+    
+    def update(self):
+        self.name = self.tree.get_name()                     # str
+        self.map_size = self.tree.get_map_size()             # double
+        self.obstacles = self.tree.get_obstacles()           # [ [ (x,y) ] ] : double
+
+        root = self.tree.get_root()
+        if root != None:
+            self.racine = self.tree.points[root]                   # (x,y) : double
+
+        terminals = self.tree.get_terminals()
+        if len(terminals) != 0:
+            self.terminals = [self.tree.points[i] for i in terminals]           # [ (x,y) ] : double
+        
+        relays = self.tree.get_used_relays()
+        if len(relays) != 0:
+            self.relays = [self.tree.points[i] for i in relays]             # [ (x,y) ] : double
+
+        links = self.tree.get_used_edges()
+        #print(links)
+        if len(links) != 0:
+            self.links = self.update_edges(links)              # [ (int, int, double)]
+        
+        self.cost = self.tree.get_solution_cost()            # double
+    
+    # Update edges id with clean list
+    def update_edges(self, links):
+        tree_points = [self.racine] + self.terminals + self.relays
+        print(len(tree_points), len(self.tree.points))
+        print(tree_points[:10])
+        print(self.tree.points[:10])
+        print(links[:5])
+
+        corrected_id = [-1] * len(self.tree.points)
+
+        j = 0
+        for id,p in enumerate(self.tree.points):
+            if p == tree_points[j]:
+                corrected_id[id] = j
+                j += 1
+            else:
+                corrected_id[id] = -1
+            if j >= len(tree_points):
+                break
+        print(corrected_id)
+        
+        tree_links = links.copy()
+
+        for i in range(len(links)):
+            tree_links[i] = (corrected_id[links[i][0]], corrected_id[links[i][1]])
+        
+        return tree_links
 
 # The Tree class represents a tree in the TERRA environment.
 class Tree:
@@ -24,6 +119,9 @@ class Tree:
         self.used_edges = []   # list of edges that are used in the current solution, where each edge is represented as a pair of ids
         self.used_relays = []  # list of candidate points that are used as relays in the current solution, represented as a list of ids
         self.solution_cost = None   # cost of the current solution
+
+        # Solution tree object
+        self.solution_tree = solutionTree(self)
 
         self.previous_grid_parameters = [-1, None]
         self.previous_edges_parameters = [-1]
@@ -95,9 +193,12 @@ class Tree:
             if solution["map_name"] != self.map.get_name():
                 raise ValueError(f"Map name in solution.json does not match the map name: {solution['map_name']} != {self.map.get_name()}")
             
-            self.used_edges = solution["edges"]
-            self.used_relays = solution["candidates"]
-            self.solution_cost = solution["solution_cost"]
+            # Load data into solution tree object
+            self.solution_tree.load(solution)
+            
+            #self.used_edges = solution["edges"]
+            #self.used_relays = solution["candidates"]
+            #self.solution_cost = solution["solution_cost"]
             self.fileIsWritten[3] = True
         except FileNotFoundError:
             pass
@@ -139,14 +240,7 @@ class Tree:
             self.fileIsWritten[2] = True
 
         if not self.fileIsWritten[3]:
-            solution_data = {
-                "map_name": self.map.get_name(),
-                "racine": self.points[0],
-                "terminals": self.points[1:],
-                "candidates": self.get_candidates_positions(),
-                "edges": self.used_edges,
-                "solution_cost": self.solution_cost
-            }
+            solution_data = self.solution_tree.save()
             with open(f"{self.map.map_path}/solution.json", "w") as f:
                 json.dump(solution_data, f, indent=2)
             self.fileIsWritten[3] = True
@@ -266,10 +360,101 @@ class Tree:
         print(f"Used relays: {self.used_relays}")
         print(f"Solution cost: {self.solution_cost}")
 
+        self.solution_tree.update()
+
         #self.used_edges = []  
         #for edge in self.edges:
         #    if (edge[0], edge[1]) in solution or (edge[1], edge[0]) in solution:
         #        self.used_edges.append(edge)
+
+    # Local correction following a force model
+    def local_correction(self, dt, tMax, dmin=10, dmax=30, fMax=1000, k=0.0001):
+
+        def compute_forces(p1, p2, dmin, dmax, fMax):   # Forces from p1 towards p2
+            dist = compute_distance(p1, p2)
+
+            X = (dist - dmin) / (dmax - dmin)
+            
+            if X >= 1:
+                mag = fMax
+            else:
+                mag = X * fMax
+
+            angle = math.atan2(p2[1] - p1[1], p2[0] - p1[0])
+            return [mag * math.cos(angle), mag * math.sin(angle)]
+
+        fixed_points_id = [self.root] + self.terminals
+        mobile_points_id = self.used_relays
+        all_points_id = fixed_points_id + mobile_points_id
+
+        fixed_points = [self.points[i] for i in fixed_points_id]
+        mobile_points = [self.points[i] for i in mobile_points_id]
+        all_points = fixed_points + mobile_points
+
+        link_to_mobile_id = [[] for _ in range(len(mobile_points))]
+        for e in self.used_edges:
+            e0 = all_points_id.index(e[0])
+            e1 = all_points_id.index(e[1])
+            if (e[0] in mobile_points_id):
+                link_to_mobile_id[mobile_points_id.index(e[0])].append(e1)
+            if (e[1] in mobile_points_id):
+                link_to_mobile_id[mobile_points_id.index(e[1])].append(e0)
+
+        # Initialize forces
+        forces = [[0, 0] for _ in range (len(mobile_points_id))]
+
+        #print(fixed_points)
+        #print(mobile_points)
+        #print(link_to_mobile_id)
+
+        for t in range(dt, tMax + dt, dt):
+            # Compute forces
+            for id, p in enumerate(mobile_points):
+                forces[id] = [0, 0]
+                for link in link_to_mobile_id[id]:
+                    forces[id] = [a + b for a, b in zip(forces[id], compute_forces(p, all_points[link], dmin, dmax, fMax))]
+
+            # Compute new pose
+            new_pos = []
+            for id, p in enumerate(mobile_points):
+                new_pos.append([p[0] + forces[id][0] * k, p[1] + forces[id][1] * k])
+            
+            corrected_pos = [p for p in new_pos]
+            # Check new pos, with LOS and obstacles
+            for id, p in enumerate(new_pos):
+                stop = False
+                if is_point_in_obstacle(p, self.map.get_obstacles()):
+                    stop = True
+
+                for id2 in link_to_mobile_id[id]:
+
+                    if id2 >= len(fixed_points):
+                        p2 = new_pos[id2 - len(fixed_points)]
+                    else:
+                        p2 = all_points[id2]
+
+                    if is_line_obstructed(p, p2, self.map.get_obstacles()):
+                        stop = True
+                        break
+                
+                if stop:
+                    corrected_pos[id] = mobile_points[id]
+                else:
+                    corrected_pos[id] = new_pos[id]
+            
+            for id, p in enumerate(corrected_pos):
+                new_pos[id] = corrected_pos[id]
+
+            # Update position
+            for id in range(len(mobile_points)):
+                mobile_points[id] = [new_pos[id][0], new_pos[id][1]]
+
+        # Update relays positions
+        for id, p in enumerate(mobile_points_id):
+            self.points[p] = mobile_points[id]
+
+
+    #region Getter
 
     # Get the size of the map
     def get_map_size(self):
@@ -313,6 +498,9 @@ class Tree:
     def get_used_edges(self):
         return self.used_edges
     
+    # Get the used relaus of the tree
+    def get_used_relays(self):
+        return self.used_relays
     # Get the solution cost
     def get_solution_cost(self):
         return self.solution_cost
@@ -320,7 +508,10 @@ class Tree:
     # Get the number of terminals in the tree
     def get_nb_terminals(self):
         return len(self.terminals)
-    
+    #endregion
+
+    # region str representation
+
     # String representation of the tree for debugging purposes
     def __str__(self):
         return f"Tree(map={self.map}, points={self.points}, root={self.root}, terminals={self.terminals}, candidates={self.candidates}, edges={self.edges}, used_edges={self.used_edges})"
@@ -328,3 +519,4 @@ class Tree:
     # Use the string representation of the tree for the official representation of the tree
     def __repr__(self):
         return self.__str__()
+    #endregion
