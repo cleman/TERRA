@@ -117,7 +117,7 @@ class Solver:
 
         # Number of activated relays constraints
         def nb_activated_relays_rule(model):
-            return sum(model.L[i, j] for i in model.N for j in model.N if j > nb_terminals and model.D[i, j] < 1e10) <= 50
+            return sum(model.L[i, j] for i in model.N for j in model.N if j > nb_terminals and model.D[i, j] < 1e10) <= 10
         model.nb_activated_relays = pyo.Constraint(rule=nb_activated_relays_rule)
 
         def prevent_relay_2cycles_rule(model, i, j):
