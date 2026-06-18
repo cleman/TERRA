@@ -62,7 +62,7 @@ def main():
     photo = [ImageTk.PhotoImage(i) for i in img]
 
     # Create page frames and add them to the mainFrame
-    map_page = generateMapPage(toolsFrame, window)
+    map_page = generateMapPage(tree, toolsFrame, window)
     grid_page = generateGridPage(tree, toolsFrame, window)
     edges_page = generateEdgesPage(tree, toolsFrame, window)
     solver_page = SolverPage(tree, toolsFrame, window)
@@ -180,6 +180,11 @@ def main():
             solution_cost_label.config(text=f"Solution cost: {tree.get_solution_cost()}")
         else:
             solution_cost_label.config(text="Solution cost: N/A")
+        
+    # Generate map page
+    map_page.map_page_var = view_options_values[1]
+    map_page.raise_page_var = page_to_raise_int
+    map_page.refresh_callback = update_map_view
     
     # Grid page
     grid_page.candidates_var = view_options_values[2]
@@ -197,6 +202,8 @@ def main():
     solver_page.refresh_callback = update_map_view
 
     # Other
+    other_page.other_var = view_options_values[4]
+    other_page.raise_page_var = page_to_raise_int
     other_page.refresh_callback = update_map_view
 
     # Update the map view

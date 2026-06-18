@@ -8,7 +8,9 @@ class otherPage(tk.Frame):
         tk.Frame.__init__(self, parent)
 
         self.tree = tree
-        self.refresh_callback = None      
+        self.other_var = None
+        self.refresh_callback = None
+        self.raise_page_var = None
 
         # Titre principal centré en haut
         label = tk.Label(self, text="Other", font=("Arial", 24))
@@ -84,6 +86,11 @@ class otherPage(tk.Frame):
 
         print(f"Local correction, parameters : nbStep={nbStep}, stepLength={stepLength}, minDist={minDist}, maxDist={maxDist}, maxForce={maxForce}, k={k}")
         self.tree.local_correction(nbStep, stepLength, minDist, maxDist, maxForce, k)
+
+        # If the edges view is not enabled, enable it
+        if self.other_var is not None and not self.other_var.get():
+            self.other_var.set(True)
+        self.raise_page_var.set(4)
 
         # Refresh the map view to show the new edges
         if callable(self.refresh_callback):

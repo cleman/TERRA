@@ -1,5 +1,8 @@
 import matplotlib.pyplot as plt
 from shapely.geometry import LineString, Polygon
+import random
+import math
+
 
 # Compute the minimum distance from a point to a list of points
 def min_dist(point, points):
@@ -37,6 +40,33 @@ def is_line_obstructed(p1, p2, obstacles):
         if line_intersects_polygon(p1, p2, obs):
             return True
     return False
+
+# Function to check if two polygons overlap
+def polygons_overlap(polygon1, polygon2):
+    poly1 = Polygon(polygon1)
+    poly2 = Polygon(polygon2)
+    return poly1.intersects(poly2)
+
+# Function to generate a random polygon without overlap
+def generate_obstacle(map_size, max_vertices, max_size, existing_obstacles):
+    for _ in range(100):  # Try up to 100 times to find a non-overlapping polygon
+        num_vertices = random.randint(3, max_vertices)  # At least 3 vertices for a polygon
+        center_x = random.uniform(0, map_size)
+        center_y = random.uniform(0, map_size)
+        radius = random.uniform(0.2*max_size, max_size)
+
+        vertices = []
+        for i in range(num_vertices):
+            angle = 2 * math.pi * i / num_vertices
+            x = center_x + radius * random.uniform(0.5, 1.0) * math.cos(angle)
+            y = center_y + radius * random.uniform(0.5, 1.0) * math.sin(angle)
+            vertices.append((x, y))
+
+        # Check for overlap
+        if not any(polygons_overlap(vertices, obs) for obs in existing_obstacles):
+            return vertices
+
+    raise ValueError("Could not place a non-overlapping polygon after 100 attempts")
 
 ############# COST TO CHANGE #############
 def fcost(dist):

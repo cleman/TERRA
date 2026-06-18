@@ -39,6 +39,8 @@ class solutionTree():
         self.relays = jsonSol["relays"]
         self.links = jsonSol["links"]
         self.cost = jsonSol["cost"]
+
+        return self.relays, self.links, self.cost
     
     def save(self):
         output = {
@@ -139,6 +141,8 @@ class Tree:
         candidates = None
         edges = None
 
+        self.points = []
+
         # Load root and terminals data from the terminals.json file in the map's directory (should exist)
         try:
             with open(f"{self.map.map_path}/terminals.json") as f:
@@ -147,11 +151,16 @@ class Tree:
             if terminals["map_name"] != self.map.get_name():
                 raise ValueError(f"Map name in terminals.json does not match the map name: {terminals['map_name']} != {self.map.get_name()}")
             
+            # List of IDs
             self.root = 0
             self.terminals = list(range(1, len(terminals["terminals"])+1))
 
+            self.points = [terminals["racine"]] + terminals["terminals"]
+
             self.fileIsWritten[0] = True
         except FileNotFoundError:
+            self.root = None
+            self.terminals = None
             raise FileNotFoundError(f"Terminals file not found in {self.map.map_path}")
         
         # Load candidate points data from the candidates.json file in the map's directory (could not exist)
@@ -162,10 +171,14 @@ class Tree:
             if candidates["map_name"] != self.map.get_name():
                 raise ValueError(f"Map name in candidates.json does not match the map name: {candidates['map_name']} != {self.map.get_name()}")
             
-            self.candidates = list(range(1 + len(terminals["terminals"]), 1 + len(terminals["terminals"]) + len(candidates["candidates"])))
+            self.candidates = list(range(1 + len(terminals["terminals"]), 1 + len(terminals["terminals"]) + len(candidates["candidates"]))) # List of IDs
+
+            self.points += candidates["candidates"]
+
             self.fileIsWritten[1] = True
         except FileNotFoundError:
-            pass
+            self.candidates = None
+            raise FileNotFoundError(f"Candidates file not found in {self.map.map_path}")
         
         # Load edges data from the edges.json file in the map's directory (could not exist)
         try:
@@ -178,12 +191,8 @@ class Tree:
             self.edges = edges["edges"]
             self.fileIsWritten[2] = True
         except FileNotFoundError:
-            pass
-
-        self.points = [terminals["racine"]] + terminals["terminals"]
-        
-        if candidates is not None:
-            self.points += candidates["candidates"]
+            self.edges = None
+            raise FileNotFoundError(f"Edges file not found in {self.map.map_path}")
         
         # Load solution
         try:
@@ -194,11 +203,9 @@ class Tree:
                 raise ValueError(f"Map name in solution.json does not match the map name: {solution['map_name']} != {self.map.get_name()}")
             
             # Load data into solution tree object
-            self.solution_tree.load(solution)
-            
-            #self.used_edges = solution["edges"]
-            #self.used_relays = solution["candidates"]
-            #self.solution_cost = solution["solution_cost"]
+            raw_data = self.solution_tree.load(solution)
+            self.used_relays, self.used_edges, self.solution_cost = self.develop_solution(raw_data)
+
             self.fileIsWritten[3] = True
         except FileNotFoundError:
             pass
@@ -247,7 +254,7 @@ class Tree:
 
            
     # Compute the figures and axes of the tree
-    def plot(self, bool_values=[True, True, False, False, False]):
+    def plot(self, bool_values=[True, True, False, False, False]):      # bool_values = [Environment, Terminals, Candidates, Edges, Solution]
         self.map.compute_fig_ax(bool_values[0])
 
         labels = {"root": "Root", "terminal": "Terminal", "candidate": "Candidate", "other": "Other", "used_edge": "Used Edge", "edge": "Edge"}
@@ -370,6 +377,8 @@ class Tree:
     # Local correction following a force model
     def local_correction(self, dt, tMax, dmin=10, dmax=30, fMax=1000, k=0.0001):
 
+        self.fileIsWritten[3] = False
+
         def compute_forces(p1, p2, dmin, dmax, fMax):   # Forces from p1 towards p2
             dist = compute_distance(p1, p2)
 
@@ -453,6 +462,35 @@ class Tree:
         for id, p in enumerate(mobile_points_id):
             self.points[p] = mobile_points[id]
 
+    # Write the solution tree with the raw data and add the offset to the relays and edges ids
+    def develop_solution(self, raw_data):
+        relays, links, cost = raw_data
+
+        corresponding_ids = [i for i in range (1 + len(self.terminals))]
+        corresponding_ids += [self.points.index(r) for r in relays]
+
+        self.used_relays = [corresponding_ids[i + 1 + len(self.terminals)] for i in range(len(relays))]
+        self.used_edges = [(corresponding_ids[e[0]], corresponding_ids[e[1]]) for e in links]
+        self.solution_cost = cost
+
+        return self.used_relays, self.used_edges, self.solution_cost
+
+    # Generate a random map with a given size, number of obstacles and maximum size of obstacles
+    def generate_map(self, map_size, num_obstacles, max_size):
+        self.map.generate_obstacles(map_size, num_obstacles, max_size)
+        
+        self.root = None  # Clear racine when generating new obstacles
+        self.terminals = []  # Clear terminals when generating new obstacles
+
+        self.candidates = []  # Clear candidates when generating new obstacles
+        self.edges = []  # Clear edges when generating new obstacles
+        self.used_edges = []  # Clear used edges when generating new obstacles
+        self.used_relays = []  # Clear used relays when generating new obstacles
+        self.solution_cost = None  # Clear solution cost when generating new obstacles
+
+
+
+        # self.mapDataIsWritten = False
 
     #region Getter
 

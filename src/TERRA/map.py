@@ -2,6 +2,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 import json
+from utils import generate_obstacle
 
 # The Map class represents a map in the TERRA environment. It loads the map data from a JSON file and provides methods to access the map size, obstacles, and name. It also provides a method to get the figures and axes for plotting the map.
 class Map:
@@ -90,4 +91,16 @@ class Map:
         
         self.fig = fig
         self.ax = ax
+    
+    # Generate a random map with a given size, number of obstacles and maximum size of obstacles
+    def generate_obstacles(self, map_size, num_obstacles, max_size):
+        
+        self.obstacles = []
+        for _ in range(num_obstacles):
+            self.obstacles.append(generate_obstacle(map_size, 8, max_size, self.obstacles))
+        
+        self.racine = None  # Clear racine when generating new obstacles
+        self.terminals = []  # Clear terminals when generating new obstacles
+
+        self.mapDataIsWritten = False
     
