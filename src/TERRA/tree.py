@@ -346,8 +346,10 @@ class Tree:
                 for vertex in obs:
                     points.append(vertex)
 
-        for x in range(0, int(self.map.get_map_size()) + 1, grid_size):
-            for y in range(0, int(self.map.get_map_size()) + 1, grid_size):
+        offset = int((self.map.get_map_size() % grid_size) / 2)
+        
+        for x in range(offset, int(self.map.get_map_size()) + grid_size, grid_size):
+            for y in range(offset, int(self.map.get_map_size()) + grid_size, grid_size):
                 if not is_point_in_obstacle((x, y), self.map.get_obstacles()) and min_dist((x, y), points + self.points) > grid_size/5:
                     points.append((x, y))
         
