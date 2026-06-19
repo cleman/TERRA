@@ -17,8 +17,7 @@ SOLUTION = 4
 
 # Structure representing the full solution by itself
 class solutionTree():
-    def __init__(self, tree):
-        self.tree = tree
+    def __init__(self, name, map_size, obstacles, root, points, terminals, used_relays, used_edges, solution_cost):
 
         self.name = None                     # str
         self.map_size = None             # double
@@ -29,7 +28,7 @@ class solutionTree():
         self.links = None              # [ (int, int, double)]
         self.cost = None            # double
 
-        self.update()
+        self.update(name, map_size, obstacles, root, points, terminals, used_relays, used_edges, solution_cost)
         
     
     def load(self, jsonSol):
@@ -57,42 +56,38 @@ class solutionTree():
         }
         return output
     
-    def update(self):
-        self.name = self.tree.get_name()                     # str
-        self.map_size = self.tree.get_map_size()             # double
-        self.obstacles = self.tree.get_obstacles()           # [ [ (x,y) ] ] : double
+    def update(self, name, map_size, obstacles, root, points, terminals, used_relays, used_edges, solution_cost):
+        self.name = name                     # str
+        self.map_size = map_size             # double
+        self.obstacles = obstacles           # [ [ (x,y) ] ] : double
 
-        root = self.tree.get_root()
         if root != None:
-            self.racine = self.tree.points[root]                   # (x,y) : double
-
-        terminals = self.tree.get_terminals()
+            self.racine = points[root]                   # (x,y) : double
+        
         if len(terminals) != 0:
-            self.terminals = [self.tree.points[i] for i in terminals]           # [ (x,y) ] : double
+            self.terminals = [points[i] for i in terminals]           # [ (x,y) ] : double
         
-        relays = self.tree.get_used_relays()
-        if len(relays) != 0:
-            self.relays = [self.tree.points[i] for i in relays]             # [ (x,y) ] : double
+        if len(used_relays) != 0:
+            self.relays = [points[i] for i in used_relays]             # [ (x,y) ] : double
 
-        links = self.tree.get_used_edges()
-        #print(links)
-        if len(links) != 0:
-            self.links = self.update_edges(links)              # [ (int, int, double)]
+
+        if len(used_edges) != 0:
+            self.links = self.update_edges(points, used_edges)              # [ (int, int, double)]
         
-        self.cost = self.tree.get_solution_cost()            # double
+        self.cost = solution_cost            # double
     
     # Update edges id with clean list
-    def update_edges(self, links):
+    def update_edges(self, points, links):
         tree_points = [self.racine] + self.terminals + self.relays
-        print(len(tree_points), len(self.tree.points))
+        print(len(tree_points), len(points))
         print(tree_points[:10])
-        print(self.tree.points[:10])
+        print(points[:10])
         print(links[:5])
 
-        corrected_id = [-1] * len(self.tree.points)
+        corrected_id = [-1] * len(points)
 
         j = 0
-        for id,p in enumerate(self.tree.points):
+        for id,p in enumerate(points):
             if p == tree_points[j]:
                 corrected_id[id] = j
                 j += 1
@@ -125,7 +120,17 @@ class Tree:
         self.solution_cost = None   # cost of the current solution
 
         # Solution tree object
-        self.solution_tree = solutionTree(self)
+        self.solution_tree = solutionTree(
+            self.map.get_name(),
+            self.map.get_map_size(),
+            self.map.get_obstacles(),
+            self.root,
+            self.points,
+            self.terminals,
+            self.used_relays,
+            self.used_edges,
+            self.solution_cost
+        )
 
         self.previous_grid_parameters = [-1, None]
         self.previous_edges_parameters = [-1]
@@ -133,6 +138,20 @@ class Tree:
         self.fileIsWritten = [False, False, False, False]       # Terminals, Candidates, Edges, solution
         
         self.load_tree()
+    
+    # Update solution tree object with current data
+    def update_solution_tree(self):
+        self.solution_tree.update(
+            self.get_name(), 
+            self.get_map_size(), 
+            self.get_obstacles(), 
+            self.get_root(), 
+            self.get_points(), 
+            self.get_terminals(),
+            self.get_used_relays(), 
+            self.get_used_edges(), 
+            self.solution_cost
+        )
     
     # Load the tree data from the tree.json file in the map's directory
     def load_tree(self):
@@ -224,7 +243,7 @@ class Tree:
             terminals_data = {
                 "map_name": self.map.get_name(),
                 "racine": self.points[0],
-                "terminals": self.points[1:]
+                "terminals": self.points[1:len(self.terminals)+1]
             }
             with open(f"{self.map.map_path}/terminals.json", "w") as f:
                 json.dump(terminals_data, f, indent=2)
@@ -369,7 +388,9 @@ class Tree:
         print(f"Used relays: {self.used_relays}")
         print(f"Solution cost: {self.solution_cost}")
 
-        self.solution_tree.update()
+        self.update_solution_tree()
+
+        self.fileIsWritten[3] = False
 
         #self.used_edges = []  
         #for edge in self.edges:
@@ -463,6 +484,13 @@ class Tree:
         # Update relays positions
         for id, p in enumerate(mobile_points_id):
             self.points[p] = mobile_points[id]
+        
+        # Update used_relays positions
+        for id, p in enumerate(mobile_points_id):
+            self.used_relays[id] = p
+
+        # Update solution tree
+        self.update_solution_tree()
 
     # Write the solution tree with the raw data and add the offset to the relays and edges ids
     def develop_solution(self, raw_data):
@@ -549,7 +577,7 @@ class Tree:
         if len(self.terminals) < nbTerminals:
             raise ValueError("Could not place all terminals within constraints")
 
-        self.terminalsDataIsWritten = False
+        self.fileIsWritten[0] = False
 
         self.candidates = []  # Clear candidates when generating new obstacles
         self.edges = []  # Clear edges when generating new obstacles
@@ -612,6 +640,16 @@ class Tree:
     def get_nb_terminals(self):
         return len(self.terminals)
     #endregion
+
+
+    # region Setter
+
+    # Set the name of the map
+    def set_name(self, name):
+        self.map.set_name(name)
+        self.solution_tree.name = name
+
+    # endregion
 
     # region str representation
 

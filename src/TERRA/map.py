@@ -63,6 +63,12 @@ class Map:
     def get_obstacles(self):
         return self.obstacles
     
+    # Set the name of the map
+    def set_name(self, name):
+        self.name = name
+        self.map_path = f"data/maps/{self.name}"
+        self.mapdataIsWritten = False  # Mark map data as not written since the name has changed
+    
     # Get the name of the map
     def get_name(self):
         return self.name

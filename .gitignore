@@ -1,3 +1,9 @@
 tests
 src/TERRA/__pycache__
 src/TERRA/Pages/__pycache__
+data/maps/map*
+!/data/maps/map1
+!/data/maps/map2
+!/data/maps/map3
+!/data/maps/map4
+!/data/maps/map5

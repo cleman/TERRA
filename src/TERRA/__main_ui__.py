@@ -2,7 +2,8 @@ from tree import Tree
 from solver import Solver
 
 from tkinter import *
-from tkinter.messagebox import *
+from tkinter import messagebox
+#from tkinter.messagebox import *
 from tkinter.filedialog import *
 from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -125,10 +126,23 @@ def main():
     load_button.pack(padx=10, pady=10, side=LEFT)
 
     def save_map():
-        if (tree.map.get_name() == map_name_value.get()):
+        target_name = map_name_value.get()
+        if not target_name:
+            messagebox.showerror("Error", "Map name cannot be empty.")
+            return
+
+        if (tree.map.get_name() == target_name):
             tree.save_tree()
         else:
-            raise ValueError("Loaded map differ than current name")
+            response = messagebox.askyesno("Map name mismatch", "The loaded map name differs from the current name. Do you want to save the map with the current name?")
+
+            if response:
+                tree.set_name(target_name)
+                tree.save_tree()
+            else:
+                messagebox.showinfo("Save Cancelled", "Map save operation cancelled.")
+                return
+    
     # Save map
     save_button = Button(view_top_bar, text="Save Map", font=("Arial", 14), command=lambda: save_map())
     save_button.pack(padx=10, pady=10, side=LEFT)
