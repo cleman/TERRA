@@ -54,9 +54,12 @@ class SolverPage(tk.Frame):
         self.solver.solve(solver_name, time_limit)
         print(f"Solution: {self.solver.get_solution()}")
 
+        view_configuration = [True, True, False, False, True]
+
         # If the edges view is not enabled, enable it
-        if self.solver_var is not None and not self.solver_var.get():
-            self.solver_var.set(True)
+        if self.solver_var is not None:
+            for i in range(len(view_configuration)):
+                self.solver_var[i].set(view_configuration[i])
         self.raise_page_var.set(4)
 
         # Refresh the map view to show the new edges

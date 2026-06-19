@@ -3,6 +3,8 @@ import json
 import matplotlib.pyplot as plt
 from utils import *
 import math
+from shapely.geometry import Polygon
+from shapely.geometry import Point
 
 '''
 # Type of plotting
@@ -256,7 +258,7 @@ class Tree:
     # Compute the figures and axes of the tree
     def plot(self, bool_values=[True, True, False, False, False]):      # bool_values = [Environment, Terminals, Candidates, Edges, Solution]
         self.map.compute_fig_ax(bool_values[0])
-
+        
         labels = {"root": "Root", "terminal": "Terminal", "candidate": "Candidate", "other": "Other", "used_edge": "Used Edge", "edge": "Edge"}
 
         # Draw the points of the tree, with different colors for the root, terminal, candidate and other points
@@ -488,9 +490,72 @@ class Tree:
         self.used_relays = []  # Clear used relays when generating new obstacles
         self.solution_cost = None  # Clear solution cost when generating new obstacles
 
+    # Generate random terminals with given constraints: number of terminals, minimum distance between terminals, minimum distance to center, and minimum distance to obstacles
+    def generate_terminals(self, nbTerminals, minDist, dist2Center, dist2Obstacles):
+        self.terminals = []
+        self.root = None  # Clear racine when generating new terminals
 
+        obsPolygons = [Polygon(obs) for obs in self.get_obstacles()]
 
-        # self.mapDataIsWritten = False
+        # Try to place root around the center with a small random offset while respecting the constraints
+        while self.root is None:  # Try up to 100 times to place the
+            x = random.uniform(-self.get_map_size()/4, self.get_map_size()/4) + self.get_map_size() / 2
+            y = random.uniform(-self.get_map_size()/4, self.get_map_size()/4) + self.get_map_size() / 2
+            point = Point(x, y)
+
+            #if point.distance(Point(self.get_map_size() / 2, self.get_map_size() / 2)) < dist2Center:
+            #    print("Root too close to center, skipping")
+            #    continue
+            #if any(point.distance(Point(tx, ty)) < minDist for tx, ty in self.terminals):
+            #    print("Root too close to existing terminal, skipping")
+            #    continue
+            if any(obs.contains(point) or obs.exterior.distance(point) < dist2Obstacles for obs in obsPolygons):
+                print("Root too close to obstacle, skipping")
+                continue
+
+            root = (x, y)
+            self.root = 0
+            self.points = [root]
+            break
+        print("Root placed at", self.root)
+
+        # Try to place terminals while respecting constraints
+        for _ in range(1000):  # Try up to 1000 times to place terminals
+            if len(self.terminals) >= nbTerminals:
+                break
+
+            x = random.uniform(0, self.get_map_size())
+            y = random.uniform(0, self.get_map_size())
+            point = Point(x, y)
+
+            # Check constraints
+            if point.distance(Point(root[0], root[1])) < dist2Center:
+                print("Terminal too close to center, skipping")
+                continue
+            if self.terminals:
+                if any(point.distance(Point(self.points[id][0], self.points[id][1])) < minDist for id in self.terminals):
+                    print("Terminal too close to existing terminal, skipping")
+                    continue
+            #if len(self.points) > 1 and min([point.distance(Point(t[0], t[1])) for t in self.points[1:]]) < minDist:
+            #    print("Terminal too close to existing terminal, skipping")
+            #    continue
+            if any(obs.contains(point) or obs.exterior.distance(point) < dist2Obstacles for obs in obsPolygons):
+                print("Terminal too close to obstacle, skipping")
+                continue
+
+            self.points.append((x, y))
+            self.terminals.append(len(self.points) - 1)
+
+        if len(self.terminals) < nbTerminals:
+            raise ValueError("Could not place all terminals within constraints")
+
+        self.terminalsDataIsWritten = False
+
+        self.candidates = []  # Clear candidates when generating new obstacles
+        self.edges = []  # Clear edges when generating new obstacles
+        self.used_edges = []  # Clear used edges when generating new obstacles
+        self.used_relays = []  # Clear used relays when generating new obstacles
+        self.solution_cost = None  # Clear solution cost when generating new obstacles
 
     #region Getter
 

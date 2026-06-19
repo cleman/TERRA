@@ -182,27 +182,28 @@ def main():
             solution_cost_label.config(text="Solution cost: N/A")
         
     # Generate map page
-    map_page.map_page_var = view_options_values[1]
+    map_page.mapdata_var = view_options_values
+    map_page.terminals_var = view_options_values
     map_page.raise_page_var = page_to_raise_int
     map_page.refresh_callback = update_map_view
     
     # Grid page
-    grid_page.candidates_var = view_options_values[2]
+    grid_page.candidates_var = view_options_values
     grid_page.raise_page_var = page_to_raise_int
     grid_page.refresh_callback = update_map_view
 
     # Edges page
-    edges_page.candidates_edges_var = view_options_values[3]
+    edges_page.candidates_edges_var = view_options_values
     edges_page.raise_page_var = page_to_raise_int
     edges_page.refresh_callback = update_map_view
 
     # Solver
-    solver_page.solver_var = view_options_values[4]
+    solver_page.solver_var = view_options_values
     solver_page.raise_page_var = page_to_raise_int
     solver_page.refresh_callback = update_map_view
 
     # Other
-    other_page.other_var = view_options_values[4]
+    other_page.other_var = view_options_values
     other_page.raise_page_var = page_to_raise_int
     other_page.refresh_callback = update_map_view
 

@@ -37,10 +37,12 @@ class generateEdgesPage(tk.Frame):
         self.tree.compute_edges(distance)
         print(f"Number of edges: {len(self.tree.get_edges())}")
 
+        view_configuration = [True, True, True, True, False]
 
         # If the edges view is not enabled, enable it
-        if self.candidates_edges_var is not None and not self.candidates_edges_var.get():
-            self.candidates_edges_var.set(True)
+        if self.candidates_edges_var is not None:
+            for i in range (len(view_configuration)):
+                self.candidates_edges_var[i].set(view_configuration[i])
         self.raise_page_var.set(3)
 
         # Refresh the map view to show the new edges

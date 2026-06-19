@@ -42,8 +42,11 @@ class generateGridPage(tk.Frame):
         include_obstacles = self.obstacles_var.get()
         print(f"Generating grid of size {size} with obstacles: {include_obstacles}")
 
-        if self.candidates_var is not None and not self.candidates_var.get():
-            self.candidates_var.set(True)
+        view_configuration = [True, True, True, False, False]
+
+        if self.candidates_var is not None:
+            for i in range (len(view_configuration)):
+                self.candidates_var[i].set(view_configuration[i])
         self.raise_page_var.set(2)
 
         self.tree.generate_discrete_grid(size, include_obstacles)

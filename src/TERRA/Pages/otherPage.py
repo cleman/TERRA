@@ -87,9 +87,12 @@ class otherPage(tk.Frame):
         print(f"Local correction, parameters : nbStep={nbStep}, stepLength={stepLength}, minDist={minDist}, maxDist={maxDist}, maxForce={maxForce}, k={k}")
         self.tree.local_correction(nbStep, stepLength, minDist, maxDist, maxForce, k)
 
+        view_configuration = [True, True, False, False, True]
+
         # If the edges view is not enabled, enable it
-        if self.other_var is not None and not self.other_var.get():
-            self.other_var.set(True)
+        if self.other_var is not None:
+            for i in range(len(view_configuration)):
+                self.other_var[i].set(view_configuration[i])
         self.raise_page_var.set(4)
 
         # Refresh the map view to show the new edges
