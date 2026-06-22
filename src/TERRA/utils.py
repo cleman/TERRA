@@ -75,3 +75,12 @@ def fcost(dist):
     C0 = 2
     dist_norm = dist / dist_unit
     return k_coef * dist_norm**2 + C0
+
+def compute_solution_cost(tree):
+    cost = 0
+    for edge in tree.get_used_edges():          # ← used_edges, not edges
+        p1 = tree.points[edge[0]]
+        p2 = tree.points[edge[1]]
+        dist = compute_distance(p1, p2)
+        cost += fcost(dist)
+    return cost

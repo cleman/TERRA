@@ -494,6 +494,84 @@ class Tree:
         # Update solution tree
         self.update_solution_tree()
 
+    # Post-process the solution to go from a discrete solution to a continuous solution, while following the objective function and respecting the constraints of the problem
+    def post_processing(self, angle_step=5):
+        self.fileIsWritten[3] = False
+
+        # Define relay state: fix or freee
+        relays_state = [False] * len(self.used_relays)  # True = fixed, False = free
+
+        # Compute original cost
+        original_cost = self.tree_score()
+
+        # Continue until all relays are fixed
+        while not all(relays_state):
+            # 1. Choose a random free relay
+            free_relays = [i for i, state in enumerate(relays_state) if not state]
+            if not free_relays:
+                break
+            relay_id = random.choice(free_relays)
+            absolute_relay_id = self.used_relays[relay_id]
+
+            available_angles = list(range(0, 360, int(angle_step)))
+            VALID = False
+            best_cost = original_cost
+            best_position = self.points[absolute_relay_id]
+            print(f"Trying to move relay {absolute_relay_id} at position {self.points[absolute_relay_id]} with original cost {original_cost}")
+            while available_angles:
+                angle = random.choice(available_angles)
+                available_angles.remove(angle)
+                print(f"Trying angle {angle}° for relay {absolute_relay_id}")
+
+                # Compute new position of the relay
+                new_position = self.points[absolute_relay_id]
+                new_position = [new_position[0] + math.cos(math.radians(angle)), new_position[1] + math.sin(math.radians(angle))]
+
+                # Check if the new position is valid (not in obstacle and not too close to other points)
+                if is_point_in_obstacle(new_position, self.map.get_obstacles()):
+                    continue
+                if min_dist(new_position, [self.points[i] for i in range(len(self.points)) if i != absolute_relay_id]) < 1:
+                    continue
+                # Check if its connected links are not obstructed
+                obstructed = False
+                for edge in self.used_edges:
+                    if absolute_relay_id in edge:
+                        other_id = edge[0] if edge[1] == absolute_relay_id else edge[1]
+                        if is_line_obstructed(new_position, self.points[other_id], self.map.get_obstacles()):
+                            obstructed = True
+                            break
+                if obstructed:
+                    continue
+                print(f"New position {new_position} for relay {absolute_relay_id} is valid, computing cost...")
+
+                # Update the position of the relay
+                previous_position = self.points[absolute_relay_id]
+                self.points[absolute_relay_id] = new_position
+
+                # Compute new cost
+                new_cost = self.tree_score()
+                print(f"New cost with relay {absolute_relay_id} at position {new_position}: {new_cost}")
+
+                # If the new cost is better, keep the new position
+                if new_cost < best_cost:
+                    best_cost = new_cost
+                    best_position = new_position
+                    VALID = True
+                    break
+                else:
+                    # Revert the position of the relay
+                    self.points[absolute_relay_id] = previous_position
+
+            # If no valid position was found, fix the relay
+            if not VALID:
+                relays_state[relay_id] = True
+            else:
+                # Update the position of the relay to the best position found
+                self.points[absolute_relay_id] = best_position
+                original_cost = best_cost
+                print(f"Relay {absolute_relay_id} moved to {best_position} with cost {best_cost}")
+
+
     # Write the solution tree with the raw data and add the offset to the relays and edges ids
     def develop_solution(self, raw_data):
         relays, links, cost = raw_data
@@ -586,6 +664,14 @@ class Tree:
         self.used_edges = []  # Clear used edges when generating new obstacles
         self.used_relays = []  # Clear used relays when generating new obstacles
         self.solution_cost = None  # Clear solution cost when generating new obstacles
+
+    def tree_score(self):
+        if self.used_edges is None or len(self.used_edges) == 0:
+            return 0
+
+        cost = compute_solution_cost(self)
+        
+        return cost
 
     #region Getter
 
