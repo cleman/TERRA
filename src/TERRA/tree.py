@@ -739,6 +739,9 @@ class Tree:
         self.map.set_name(name)
         self.solution_tree.name = name
 
+        self.fileIsWritten = [False] * 4
+        self.map.fileIsWritten = False
+
     # endregion
 
     # region str representation
