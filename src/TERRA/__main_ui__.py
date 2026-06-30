@@ -87,12 +87,15 @@ def main():
     # Terminals
     num_terminals_label = Label(infoFrame, text="Number of terminals: 0", font=("Arial", 14))
     num_terminals_label.pack(padx=10, pady=5)
-    # Candidaates
+    # Candidates
     num_candidates_label = Label(infoFrame, text="Number of points: 0", font=("Arial", 14))
     num_candidates_label.pack(padx=10, pady=5)
     # Edges
     num_edges_label = Label(infoFrame, text="Number of edges: 0", font=("Arial", 14))
     num_edges_label.pack(padx=10, pady=5)
+    # Relays
+    num_relays_label = Label(infoFrame, text="Number of relays: 0", font=("Arial", 14))
+    num_relays_label.pack(padx=10, pady=5)
     # Solution cost
     solution_cost_label = Label(infoFrame, text="Solution cost: N/A", font=("Arial", 14))
     solution_cost_label.pack(padx=10, pady=5)
@@ -190,6 +193,7 @@ def main():
         num_terminals_label.config(text=f"Number of terminals: {tree.get_nb_terminals()}")
         num_candidates_label.config(text=f"Number of candidates: {len(tree.get_candidates())}")
         num_edges_label.config(text=f"Number of edges: {len([a for a in tree.get_edges() if a[2] < 1e10])}")
+        num_relays_label.config(text=f"Number of relays: {len(tree.get_used_relays())}")
         if tree.get_solution_cost() is not None:
             solution_cost_label.config(text=f"Solution cost: {tree.get_solution_cost()}")
         else:
