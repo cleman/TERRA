@@ -70,7 +70,6 @@ class solutionTree():
         if len(used_relays) != 0:
             self.relays = [points[i] for i in used_relays]             # [ (x,y) ] : double
 
-
         if len(used_edges) != 0:
             self.links = self.update_edges(points, used_edges)              # [ (int, int, double)]
         
@@ -383,7 +382,7 @@ class Tree:
     def set_solution(self, solution):
         self.fileIsWritten[3] = False
         self.used_edges = solution["links"]
-        self.used_relays = solution["relays"]    
+        self.used_relays = solution["relays"]
         self.solution_cost = solution["cost"]
 
         print(f"Used edges: {self.used_edges}")
@@ -498,7 +497,7 @@ class Tree:
     def post_processing(self, angle_step=5):
         self.fileIsWritten[3] = False
 
-        # Define relay state: fix or freee
+        # Define relay state: fix or free
         relays_state = [False] * len(self.used_relays)  # True = fixed, False = free
 
         # Compute original cost
@@ -570,6 +569,9 @@ class Tree:
                 self.points[absolute_relay_id] = best_position
                 original_cost = best_cost
                 print(f"Relay {absolute_relay_id} moved to {best_position} with cost {best_cost}")
+
+        # Update solution tree
+        self.update_solution_tree()
 
 
     # Write the solution tree with the raw data and add the offset to the relays and edges ids
