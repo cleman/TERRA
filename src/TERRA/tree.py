@@ -78,10 +78,10 @@ class solutionTree():
     # Update edges id with clean list
     def update_edges(self, points, links):
         tree_points = [self.racine] + self.terminals + self.relays
-        print(len(tree_points), len(points))
-        print(tree_points[:10])
-        print(points[:10])
-        print(links[:5])
+         #print(len(tree_points), len(points))
+         #print(tree_points[:10])
+         #print(points[:10])
+         #print(links[:5])
 
         corrected_id = [-1] * len(points)
 
@@ -94,7 +94,7 @@ class solutionTree():
                 corrected_id[id] = -1
             if j >= len(tree_points):
                 break
-        print(corrected_id)
+         #print(corrected_id)
         
         tree_links = links.copy()
 
@@ -516,11 +516,11 @@ class Tree:
             VALID = False
             best_cost = original_cost
             best_position = self.points[absolute_relay_id]
-            print(f"Trying to move relay {absolute_relay_id} at position {self.points[absolute_relay_id]} with original cost {original_cost}")
+             #print(f"Trying to move relay {absolute_relay_id} at position {self.points[absolute_relay_id]} with original cost {original_cost}")
             while available_angles:
                 angle = random.choice(available_angles)
                 available_angles.remove(angle)
-                print(f"Trying angle {angle}° for relay {absolute_relay_id}")
+                 #print(f"Trying angle {angle}° for relay {absolute_relay_id}")
 
                 # Compute new position of the relay
                 new_position = self.points[absolute_relay_id]
@@ -541,7 +541,7 @@ class Tree:
                             break
                 if obstructed:
                     continue
-                print(f"New position {new_position} for relay {absolute_relay_id} is valid, computing cost...")
+                 #print(f"New position {new_position} for relay {absolute_relay_id} is valid, computing cost...")
 
                 # Update the position of the relay
                 previous_position = self.points[absolute_relay_id]
@@ -549,7 +549,7 @@ class Tree:
 
                 # Compute new cost
                 new_cost = self.tree_score()
-                print(f"New cost with relay {absolute_relay_id} at position {new_position}: {new_cost}")
+                 #print(f"New cost with relay {absolute_relay_id} at position {new_position}: {new_cost}")
 
                 # If the new cost is better, keep the new position
                 if new_cost < best_cost:
@@ -568,7 +568,7 @@ class Tree:
                 # Update the position of the relay to the best position found
                 self.points[absolute_relay_id] = best_position
                 original_cost = best_cost
-                print(f"Relay {absolute_relay_id} moved to {best_position} with cost {best_cost}")
+                 #print(f"Relay {absolute_relay_id} moved to {best_position} with cost {best_cost}")
 
         # Update solution tree
         self.update_solution_tree()
@@ -627,7 +627,7 @@ class Tree:
             self.root = 0
             self.points = [root]
             break
-        print("Root placed at", self.root)
+         #print("Root placed at", self.root)
 
         # Try to place terminals while respecting constraints
         for _ in range(1000):  # Try up to 1000 times to place terminals
@@ -640,17 +640,17 @@ class Tree:
 
             # Check constraints
             if point.distance(Point(root[0], root[1])) < dist2Center:
-                print("Terminal too close to center, skipping")
+                 #print("Terminal too close to center, skipping")
                 continue
             if self.terminals:
                 if any(point.distance(Point(self.points[id][0], self.points[id][1])) < minDist for id in self.terminals):
-                    print("Terminal too close to existing terminal, skipping")
+                     #print("Terminal too close to existing terminal, skipping")
                     continue
             #if len(self.points) > 1 and min([point.distance(Point(t[0], t[1])) for t in self.points[1:]]) < minDist:
             #    print("Terminal too close to existing terminal, skipping")
             #    continue
             if any(obs.contains(point) or obs.exterior.distance(point) < dist2Obstacles for obs in obsPolygons):
-                print("Terminal too close to obstacle, skipping")
+                 #print("Terminal too close to obstacle, skipping")
                 continue
 
             self.points.append((x, y))
