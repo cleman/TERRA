@@ -1,4 +1,5 @@
 # pragma once
+import os
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 import json
@@ -44,6 +45,10 @@ class Map:
             raise ValueError("Map size is None")
         if self.obstacles is None:
             raise ValueError("Obstacles are None")
+        
+        # Check if the map directory exists, if not create it
+        if not os.path.exists(self.map_path):
+            os.makedirs(self.map_path)
 
         mapdata = {
             "map_name": self.name,
