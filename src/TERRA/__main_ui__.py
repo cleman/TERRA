@@ -185,6 +185,9 @@ def main():
         mapPlot = FigureCanvasTkAgg(tree.map.fig, master=map_view_frame)        # fixed square size for the map view
         mapPlot.get_tk_widget().pack()
 
+        # Add legend to the map view
+        tree.map.ax.legend(loc='upper right', fontsize=10)
+
         # Raise the correct page
         switch_page = {0: map_page, 1: grid_page, 2: edges_page, 3: solver_page, 4: other_page}
         switch_page[page_to_raise_int.get()].tkraise()
