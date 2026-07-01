@@ -170,7 +170,13 @@ def main():
         plt.close()
         if mapPlot is not None:
             mapPlot.get_tk_widget().destroy()
-        
+
+        # Slow the program down a lot but permit to update all the map configurations for saving the figs
+        bool_values = [False, False, False, False, False]
+        for i in range (len(bool_values)):
+            bool_values[i] = True
+            tree.plot(bool_values)
+            tree.update_map_figs(bool_values)  
 
         bool_values = [var.get() for var in view_options_values]
 
@@ -187,6 +193,7 @@ def main():
 
         # Add legend to the map view
         tree.map.ax.legend(loc='upper right', fontsize=10)
+        tree.update_map_figs(bool_values)
 
         # Raise the correct page
         switch_page = {0: map_page, 1: grid_page, 2: edges_page, 3: solver_page, 4: other_page}

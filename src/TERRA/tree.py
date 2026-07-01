@@ -1,3 +1,4 @@
+import os
 from map import Map
 import json
 import matplotlib.pyplot as plt
@@ -5,6 +6,10 @@ from utils import *
 import math
 from shapely.geometry import Polygon
 from shapely.geometry import Point
+
+# import deepcopy
+from copy import deepcopy
+
 
 '''
 # Type of plotting
@@ -135,6 +140,12 @@ class Tree:
         self.previous_edges_parameters = [-1]
 
         self.fileIsWritten = [False, False, False, False]       # Terminals, Candidates, Edges, solution
+
+        self.maps_fig = [None, None, None]
+        self.mapsIsWritten = [False, False, False]
+        # 1: root + terminals
+        # 2: root + terminals + candidates
+        # 3: root + terminals + candidates + edges
         
         self.load_tree()
     
@@ -182,6 +193,14 @@ class Tree:
             self.root = None
             self.terminals = None
             raise FileNotFoundError(f"Terminals file not found in {self.map.map_path}")
+        
+        # Check if the maps figures exists
+        if not os.path.exists(f"{self.map.map_path}/map_fig_terminals.png"):
+            self.mapsIsWritten[0] = False
+        if not os.path.exists(f"{self.map.map_path}/map_fig_candidates.png"):
+            self.mapsIsWritten[1] = False
+        if not os.path.exists(f"{self.map.map_path}/map_fig_edges.png"):
+            self.mapsIsWritten[2] = False
         
         # Load candidate points data from the candidates.json file in the map's directory (could not exist)
         try:
@@ -272,6 +291,17 @@ class Tree:
                 json.dump(solution_data, f, indent=2)
             self.fileIsWritten[3] = True
 
+        # Save the map figure
+        if not self.mapsIsWritten[0] and self.maps_fig[0] is not None:
+            self.maps_fig[0].savefig(f"{self.map.map_path}/map_fig_terminals.png")
+            self.mapsIsWritten[0] = True
+        if not self.mapsIsWritten[1] and self.maps_fig[1] is not None:
+            self.maps_fig[1].savefig(f"{self.map.map_path}/map_fig_candidates.png")
+            self.mapsIsWritten[1] = True
+        if not self.mapsIsWritten[2] and self.maps_fig[2] is not None:
+            self.maps_fig[2].savefig(f"{self.map.map_path}/map_fig_edges.png")
+            self.mapsIsWritten[2] = True
+
            
     # Compute the figures and axes of the tree
     def plot(self, bool_values=[True, True, False, False, False]):      # bool_values = [Environment, Terminals, Candidates, Edges, Solution]
@@ -317,7 +347,6 @@ class Tree:
                 line = plt.Line2D([p1[0], p2[0]], [p1[1], p2[1]], color='orange', linewidth=2, zorder=4, label=labels["used_edge"])
                 self.map.ax.add_patch(line)
                 labels["used_edge"] = "_nolegend_"  # only show the label for the used edges
-
 
         #plt.grid(True, linestyle='--', alpha=0.3)
         #plt.legend()
@@ -674,6 +703,18 @@ class Tree:
         cost = compute_solution_cost(self)
         
         return cost
+
+    # Update map_figs with deepcopy
+    def update_map_figs(self, bool_values):
+
+        if bool_values == [True, False, False, False, False]:
+            self.map.update_map_fig()
+        if bool_values == [True, True, False, False, False]:
+            self.maps_fig[0] = deepcopy(self.map.fig)
+        elif bool_values == [True, True, True, False, False]:
+            self.maps_fig[1] = deepcopy(self.map.fig)
+        elif bool_values == [True, True, True, True, False]:
+            self.maps_fig[2] = deepcopy(self.map.fig)
 
     #region Getter
 

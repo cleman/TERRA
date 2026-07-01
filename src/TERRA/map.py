@@ -5,6 +5,8 @@ from matplotlib.patches import Polygon
 import json
 from utils import generate_obstacle
 
+from copy import deepcopy
+
 # The Map class represents a map in the TERRA environment. It loads the map data from a JSON file and provides methods to access the map size, obstacles, and name. It also provides a method to get the figures and axes for plotting the map.
 class Map:
     # Initialize the map by loading the map data from the mapdata.json file in the map's directory
@@ -15,6 +17,9 @@ class Map:
         self.obstacles = None
         self.load_mapdata()     # load map_size, obstacles
         self.mapdataIsWritten = False
+
+        self.map_fig = None
+        self.map_figIsWritten = False
     
     # Load map data from the mapdata.json file in the map's directory
     def load_mapdata(self):
@@ -34,9 +39,19 @@ class Map:
         
         except FileNotFoundError:
             raise FileNotFoundError(f"Mapdata file not found in {self.map_path}")
+        
+        # Check if the map figure exists, if not, set self.map_figIsWritten to False
+        if not os.path.exists(f"{self.map_path}/map_fig.png"):
+            self.map_figIsWritten = False
     
     # Save map data
     def save_mapdata(self):
+        # Save map figure
+        if self.map_fig is not None and not self.map_figIsWritten:
+            self.map_fig.savefig(f"{self.map_path}/map_fig_env.png")
+            self.map_figIsWritten = True
+
+        # Save map data
         if self.mapdataIsWritten:
             return
         if self.name is None:
@@ -114,4 +129,7 @@ class Map:
         self.terminals = []  # Clear terminals when generating new obstacles
 
         self.mapDataIsWritten = False
+        self.map_figIsWritten = False
     
+    def update_map_fig(self):
+        self.map_fig = deepcopy(self.fig)
