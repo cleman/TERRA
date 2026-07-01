@@ -620,7 +620,7 @@ class Tree:
             #    print("Root too close to existing terminal, skipping")
             #    continue
             if any(obs.contains(point) or obs.exterior.distance(point) < dist2Obstacles for obs in obsPolygons):
-                print("Root too close to obstacle, skipping")
+                #print("Root too close to obstacle, skipping")
                 continue
 
             root = (x, y)

@@ -159,6 +159,7 @@ class generateMapPage(tk.Frame):
         print(f"Generating map with size {map_size}, {nb_obstacles} obstacles of size {size_obstacles}")
         # Call the tree method to generate the map
         self.tree.generate_map(int(map_size), int(nb_obstacles), int(size_obstacles))
+        print(f"Number of obstacles: {len(self.tree.get_obstacles())}")
 
         view_configuration = [True, False, False, False, False]
 
@@ -176,6 +177,7 @@ class generateMapPage(tk.Frame):
         print(f"Generating {nb_terminals} terminals with distance {dist_terminals}, center distance {dist_center}, and obstacle distance {dist_obstacles}")
         # Call the tree method to generate the terminals
         self.tree.generate_terminals(int(nb_terminals), int(dist_terminals), int(dist_center), int(dist_obstacles))
+        print(f"Number of terminals: {self.tree.get_nb_terminals()}")
 
         view_configuration = [True, True, False, False, False]
 

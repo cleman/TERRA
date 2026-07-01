@@ -41,6 +41,8 @@ class generateGridPage(tk.Frame):
         size = int(float(self.size_spinbox.get()))
         include_obstacles = self.obstacles_var.get()
         print(f"Generating grid of size {size} with obstacles: {include_obstacles}")
+        self.tree.generate_discrete_grid(size, include_obstacles)
+        print(f"Number of candidates: {len(self.tree.get_candidates())}")
 
         view_configuration = [True, True, True, False, False]
 
@@ -49,7 +51,6 @@ class generateGridPage(tk.Frame):
                 self.candidates_var[i].set(view_configuration[i])
         self.raise_page_var.set(2)
 
-        self.tree.generate_discrete_grid(size, include_obstacles)
 
         if callable(self.refresh_callback):
             self.refresh_callback()

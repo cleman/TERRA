@@ -35,7 +35,7 @@ class generateEdgesPage(tk.Frame):
         distance = int(self.distance_spinbox.get())
         print(f"Generating edges with distance {distance}")
         self.tree.compute_edges(distance)
-        print(f"Number of edges: {len(self.tree.get_edges())}")
+        print(f"Number of edges: {len([a for a in self.tree.get_edges() if a[2] < 1e10])}")
 
         view_configuration = [True, True, True, True, False]
 
