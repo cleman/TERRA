@@ -173,10 +173,11 @@ def main():
 
         # Slow the program down a lot but permit to update all the map configurations for saving the figs
         bool_values = [False, False, False, False, False]
-        for i in range (len(bool_values)):
+        for i in range (len(bool_values)-1):
             bool_values[i] = True
-            tree.plot(bool_values)
-            tree.update_map_figs(bool_values)  
+            if (i == 0 and tree.map.map_fig is None) or (i > 0 and tree.maps_fig[i-1] is None):
+                tree.plot(bool_values)
+                tree.update_map_figs(bool_values)
 
         bool_values = [var.get() for var in view_options_values]
 
