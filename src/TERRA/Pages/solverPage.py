@@ -19,37 +19,67 @@ class SolverPage(tk.Frame):
 
         # Text entry for solver name, default value is "appsi_highs"
         # Frame for entry
-        entry_frame = tk.Frame(self)
-        entry_frame.pack(pady=10)
+        solver_parameters_frame = tk.Frame(self)
+        solver_parameters_frame.pack(pady=10)
 
-        solver_label = tk.Label(entry_frame, text="Solver Name:", font=("Arial", 14))
-        solver_label.pack(pady=5, padx=5, side=tk.LEFT)
-        solver_value = tk.StringVar(value="appsi_highs")
-        #self.solver_entry = tk.Entry(entry_frame, width=20, font=("Arial", 14), textvariable=solver_value)
-        #self.solver_entry.pack(pady=5, padx=5, side=tk.LEFT)
-        self.solver_name_combobox = ttk.Combobox(entry_frame, values=["appsi_highs", "cbc_highs"], font=("Arial", 14), state="readonly")
+        ################### Solver parameters ###################
+        # region Local Correction
+
+        # After creating localCorrection_frame, configure columns to expand equally
+        solver_parameters_frame.columnconfigure(0, weight=1)
+        solver_parameters_frame.columnconfigure(1, weight=1)
+
+        # Name of the solver to use
+        solver_label = tk.Label(solver_parameters_frame, text="Solver Name:", font=("Arial", 14))
+        solver_label.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+        #solver_value = tk.StringVar(value="appsi_highs")
+
+        self.solver_name_combobox = ttk.Combobox(solver_parameters_frame, values=["appsi_highs", "cbc_highs"], font=("Arial", 14), state="readonly")
         self.solver_name_combobox.current(0)
-        self.solver_name_combobox.pack(pady=5, padx=5, side=tk.LEFT)
+        self.solver_name_combobox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
-        # Spin box for time limit in seconds, default value is 600, min value is 1, max value is 3600, step is 10
-        # Frame for spinbox
-        spinbox_frame = tk.Frame(self)
-        spinbox_frame.pack(pady=10)
+        # Version of the solver to use
+        solver_version_label = tk.Label(solver_parameters_frame, text="Solver Version:", font=("Arial", 14))
+        solver_version_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.solver_version_combobox = ttk.Combobox(solver_parameters_frame, values=["1.0"], font=("Arial", 14), state="readonly")
+        self.solver_version_combobox.current(0)
+        self.solver_version_combobox.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
-        time_label = tk.Label(spinbox_frame, text="Time Limit (s):", font=("Arial", 14))
-        time_label.pack(pady=5, padx=5, side=tk.LEFT)
+        # Cost function to use
+        cost_function_label = tk.Label(solver_parameters_frame, text="Cost Function:", font=("Arial", 14))
+        cost_function_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        self.cost_function_combobox = ttk.Combobox(solver_parameters_frame, values=["approximate", "linear", "network model"], font=("Arial", 14), state="readonly")
+        self.cost_function_combobox.current(0)
+        self.cost_function_combobox.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+
+        # Maximum number of relays allowed, default value is 10
+        max_relays_label = tk.Label(solver_parameters_frame, text="Max Relays:", font=("Arial", 14))
+        max_relays_label.grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        self.max_relays_value = tk.IntVar(value=10)
+        self.max_relays_spinbox = tk.Spinbox(solver_parameters_frame, from_=1, to=100, width=5, textvariable=self.max_relays_value, font=("Arial", 14))
+        self.max_relays_spinbox.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+
+        time_label = tk.Label(solver_parameters_frame, text="Time Limit (s):", font=("Arial", 14))
+        time_label.grid(row=4, column=0, padx=5, pady=5, sticky="e")
         time_value = tk.StringVar(value="600")
-        self.time_spinbox = tk.Spinbox(spinbox_frame, from_=1, to=3600, width=5, textvariable=time_value, font=("Arial", 14), increment=10)
-        self.time_spinbox.pack(pady=5, padx=5, side=tk.LEFT)
+        self.time_spinbox = tk.Spinbox(solver_parameters_frame, from_=1, to=3600, width=5, textvariable=time_value, font=("Arial", 14), increment=10)
+        self.time_spinbox.grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
         # Button to solve the problem
         solve_button = tk.Button(self, text="Solve", font=("Arial", 14), command=self.solve_problem)
         solve_button.pack(pady=20)
 
     def solve_problem(self):
-        self.solver = Solver(self.tree)
+
+        # Get solver parameters from the GUI
         solver_name = self.solver_name_combobox.get()
+        solver_version = self.solver_version_combobox.get()
+        cost_function = self.cost_function_combobox.get()
+        max_relays = int(self.max_relays_spinbox.get())
         time_limit = int(self.time_spinbox.get())
+        
+        self.solver = Solver(self.tree, max_relays)
+
         print(f"Solving problem with solver {solver_name} and time limit {time_limit} seconds")
         self.solver.solve(solver_name, time_limit)
         print(f"Solution: {self.solver.get_solution()}")

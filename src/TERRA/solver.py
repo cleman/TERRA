@@ -6,8 +6,9 @@ import sys
 import numpy as np
 
 class Solver:
-    def __init__(self, tree):
+    def __init__(self, tree, max_relays=10):
         self.tree = tree
+        self.max_relays = max_relays
 
         self.model = None
         self.solver = None
@@ -117,7 +118,7 @@ class Solver:
 
         # Number of activated relays constraints
         def nb_activated_relays_rule(model):
-            return sum(model.L[i, j] for i in model.N for j in model.N if j > nb_terminals and model.D[i, j] < 1e10) <= 10
+            return sum(model.L[i, j] for i in model.N for j in model.N if j > nb_terminals and model.D[i, j] < 1e10) <= self.max_relays
         model.nb_activated_relays = pyo.Constraint(rule=nb_activated_relays_rule)
 
         def prevent_relay_2cycles_rule(model, i, j):
