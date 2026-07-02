@@ -20,7 +20,7 @@ class Map:
         self.figure = None
         self.figureIsWritten = False
         self.figureName = "environment.png"
-        
+
         self.load_mapdata()     # load map_size, obstacles
     
     # Load map data from the mapdata.json file in the map's directory
@@ -48,10 +48,6 @@ class Map:
     
     # Save map data
     def save_mapdata(self):
-        # Save map figure
-        if self.figure is not None and not self.figureIsWritten:
-            self.figure.savefig(f"{self.map_path}/{self.figureName}")
-            self.figureIsWritten = True
 
         # Save map data
         if self.mapdataIsWritten:
@@ -66,6 +62,11 @@ class Map:
         # Check if the map directory exists, if not create it
         if not os.path.exists(self.map_path):
             os.makedirs(self.map_path)
+        
+        # Save map figure
+        if self.figure is not None and not self.figureIsWritten:
+            self.figure.savefig(f"{self.map_path}/{self.figureName}")
+            self.figureIsWritten = True
 
         mapdata = {
             "map_name": self.name,

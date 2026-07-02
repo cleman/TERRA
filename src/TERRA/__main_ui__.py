@@ -141,6 +141,7 @@ def main():
 
             if response:
                 tree.set_name(target_name)
+                update_map_view()  # Update the map view to reflect the new name
                 tree.save_tree()
             else:
                 messagebox.showinfo("Save Cancelled", "Map save operation cancelled.")
@@ -164,6 +165,20 @@ def main():
     exit_button = Button(view_top_bar, text="Exit", font=("Arial", 14), command=window.quit)
     exit_button.pack(padx=10, pady=10, side=RIGHT)
 
+    def is_drawable(index):
+        if index == 0:
+            return True
+        elif index == 1:
+            return len(tree.terminals) > 0
+        elif index == 2:
+            return len(tree.get_candidates()) > 0
+        elif index == 3:
+            return len(tree.get_edges()) > 0
+        elif index == 4:
+            return tree.get_solution_cost() is not None
+        else:
+            return False
+
     def update_map_view():
         global mapPlot
         # Close previous plot
@@ -171,14 +186,47 @@ def main():
         if mapPlot is not None:
             mapPlot.get_tk_widget().destroy()
 
-        # Slow the program down a lot but permit to update all the map configurations for saving the figs
+        # Compute figures for the different view options, if they are not already computed
         bool_values = [False, False, False, False, False]
         for i in range (len(bool_values)-1):
             bool_values[i] = True
-            if (i == 0 and tree.map.figure is None) or (i > 0 and tree.figures[i-1] is None):
+            if (i == 0 and tree.map.figure is None) or (i > 0 and tree.figures[i-1] is None and is_drawable(i)):
                 tree.plot(bool_values)
                 tree.map.ax.legend(loc='upper right', fontsize=10)
-                tree.update_map_figs(bool_values)
+                tree.update_map_figs(i)
+                plt.close()  # Close the figure
+        
+        if is_drawable(4):
+            # Compute the full solution figure
+            bool_values = [True, True, True, True, True]
+            if not tree.post_processed:
+                if tree.figures[3] is None:
+                    tree.plot(bool_values)
+                    tree.map.ax.legend(loc='upper right', fontsize=10)
+                    tree.update_map_figs(4)
+                    plt.close()  # Close the figure
+            else:
+                if tree.figures[5] is None:
+                    tree.plot(bool_values)
+                    tree.map.ax.legend(loc='upper right', fontsize=10)
+                    tree.update_map_figs(6)
+                    plt.close()  # Close the figure
+            
+            # Compute the clear solution figure (without the candidates and edges)
+            bool_values = [True, True, False, False, True]
+            if not tree.post_processed:
+                if tree.figures[4] is None:
+                    tree.plot(bool_values)
+                    tree.map.ax.legend(loc='upper right', fontsize=10)
+                    tree.update_map_figs(5)
+                    plt.close()  # Close the figure
+            else:
+                if tree.figures[6] is None:
+                    tree.plot(bool_values)
+                    tree.map.ax.legend(loc='upper right', fontsize=10)
+                    tree.update_map_figs(7)
+                    plt.close()  # Close the figure
+
 
         bool_values = [var.get() for var in view_options_values]
 
@@ -195,7 +243,7 @@ def main():
 
         # Add legend to the map view
         tree.map.ax.legend(loc='upper right', fontsize=10)
-        tree.update_map_figs(bool_values)
+        #tree.update_map_figs(bool_values)
 
         # Raise the correct page
         switch_page = {0: map_page, 1: grid_page, 2: edges_page, 3: solver_page, 4: other_page}

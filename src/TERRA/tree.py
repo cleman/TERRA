@@ -33,14 +33,6 @@ class solutionTree():
         self.links = None              # [ (int, int, double)]
         self.cost = None            # double
 
-        self.figures = [None, None, None, None]
-        self.figuresIsWritten = [False, False, False, False]
-        self.figuresName = ["solution_solver_full.png", "solution_solver.png", "solution_full.png", "solution.png"]
-        # 1: root + terminals + candidates + edges + solution
-        # 2: root + terminals + solution
-        # 3: root + terminals + candidates + edges + post_proc solution
-        # 4: root + terminals + post_proc solution
-
         self.update(name, map_size, obstacles, root, points, terminals, used_relays, used_edges, solution_cost)
         
     
@@ -131,6 +123,9 @@ class Tree:
         self.used_relays = []  # list of candidate points that are used as relays in the current solution, represented as a list of ids
         self.solution_cost = None   # cost of the current solution
 
+        # Boolean flags to indicate if the solution has been post-processed
+        self.post_processed = False
+
         # Solution tree object
         self.solution_tree = solutionTree(
             self.map.get_name(),
@@ -149,12 +144,16 @@ class Tree:
 
         self.fileIsWritten = [False, False, False, False]       # Terminals, Candidates, Edges, solution
 
-        self.figures = [None, None, None]
-        self.figuresIsWritten = [False, False, False]
-        self.figuresName = ["terminals.png", "candidates.png", "edges.png"]
+        self.figures = [None] * 7
+        self.figuresIsWritten = [False] * 7
+        self.figuresName = ["terminals.png", "candidates.png", "edges.png", "solution_solver_full.png", "solution_solver.png", "solution_full.png", "solution.png"]
         # 1: root + terminals
         # 2: root + terminals + candidates
         # 3: root + terminals + candidates + edges
+        # 4: root + terminals + candidates + edges + solution
+        # 5: root + terminals + solution
+        # 6: root + terminals + candidates + edges + post_proc solution
+        # 7: root + terminals + post_proc solution
         
         self.load_tree()
     
@@ -356,10 +355,11 @@ class Tree:
         if self.previous_grid_parameters == [grid_size, include_obstacles]:
             return
         self.previous_grid_parameters = [grid_size, include_obstacles]
-        self.fileIsWritten[1:] = [False] * 3
-        self.figuresIsWritten[1:] = [False] * 2
-        #self.solution_tree.fileIsWritten = [False] * 4
 
+        self.fileIsWritten[1:] = [False] * 3
+        self.figuresIsWritten[1:] = [False] * 6
+        self.figures[1:] = [None] * 6
+        
         # Generate a discrete grid of points in the map, with a given grid size
         self.points = self.points[:1 + len(self.terminals)]
         points = []
@@ -392,9 +392,10 @@ class Tree:
         if self.previous_edges_parameters == [dMax]:
             return
         self.previous_edges_parameters = [dMax]
+
         self.fileIsWritten[2:] = [False] * 2
-        self.figuresIsWritten[2:] = [False] * 1
-        #self.solution_tree.fileIsWritten = [False] * 4
+        self.figuresIsWritten[2:] = [False] * 5
+        self.figures[2:] = [None] * 5
 
         # Clear existing edges and solution
         self.edges = []
@@ -414,6 +415,11 @@ class Tree:
 
     def set_solution(self, solution):
         self.fileIsWritten[3] = False
+        self.figuresIsWritten[3:] = [False] * 4
+        self.figures[3:] = [None] * 4
+
+        self.post_processed = False
+
         self.used_edges = solution["links"]
         self.used_relays = solution["relays"]
         self.solution_cost = solution["cost"]
@@ -424,9 +430,6 @@ class Tree:
 
         self.update_solution_tree()
 
-        self.fileIsWritten[3] = False
-        #self.solution_tree.fileIsWritten[3] = False
-        #self.solution_tree.figuresIsWritten = [False] * 4
 
         #self.used_edges = []  
         #for edge in self.edges:
@@ -436,8 +439,12 @@ class Tree:
     # Local correction following a force model
     def local_correction(self, dt, tMax, dmin=10, dmax=30, fMax=1000, k=0.0001):
 
+        self.fileIsWritten[1] = False
         self.fileIsWritten[3] = False
-        #self.solution_tree.fileIsWritten[2:] = False
+        self.figuresIsWritten[5:] = [False] * 2
+        self.figures[5:] = [None] * 2
+
+        self.post_processed = True
 
         def compute_forces(p1, p2, dmin, dmax, fMax):   # Forces from p1 towards p2
             dist = compute_distance(p1, p2)
@@ -531,8 +538,13 @@ class Tree:
 
     # Post-process the solution to go from a discrete solution to a continuous solution, while following the objective function and respecting the constraints of the problem
     def post_processing(self, angle_step=5):
+
+        self.fileIsWritten[1] = False
         self.fileIsWritten[3] = False
-        #self.solution_tree.fileIsWritten[2:] = False
+        self.figuresIsWritten[5:] = [False] * 2
+        self.figures[5:] = [None] * 2
+
+        self.post_processed = True
 
         # Define relay state: fix or free
         relays_state = [False] * len(self.used_relays)  # True = fixed, False = free
@@ -610,7 +622,6 @@ class Tree:
         # Update solution tree
         self.update_solution_tree()
 
-
     # Write the solution tree with the raw data and add the offset to the relays and edges ids
     def develop_solution(self, raw_data):
         relays, links, cost = raw_data
@@ -626,10 +637,12 @@ class Tree:
 
     # Generate a random map with a given size, number of obstacles and maximum size of obstacles
     def generate_map(self, map_size, num_obstacles, max_size):
-        self.map.generate_obstacles(map_size, num_obstacles, max_size)
+        # Clear existing data
+        self.fileIsWritten = [False] * 4
+        self.figuresIsWritten = [False] * 7
+        self.figures = [None] * 7
 
-        self.figuresIsWritten = [False] * 3
-        #self.solution_tree.fileIsWritten = [False] * 4
+        self.map.generate_obstacles(map_size, num_obstacles, max_size)
         
         self.root = None  # Clear racine when generating new obstacles
         self.terminals = []  # Clear terminals when generating new obstacles
@@ -642,6 +655,11 @@ class Tree:
 
     # Generate random terminals with given constraints: number of terminals, minimum distance between terminals, minimum distance to center, and minimum distance to obstacles
     def generate_terminals(self, nbTerminals, minDist, dist2Center, dist2Obstacles):
+        # Clear existing terminals, candidates, edges and solution
+        self.fileIsWritten = [False] * 4        # Data file
+        self.figuresIsWritten = [False] * 7     # Map figures
+        self.figures = [None] * 7
+
         self.terminals = []
         self.root = None  # Clear racine when generating new terminals
 
@@ -699,10 +717,6 @@ class Tree:
         if len(self.terminals) < nbTerminals:
             raise ValueError("Could not place all terminals within constraints")
 
-        self.fileIsWritten[0] = False                       # Data file
-        self.figuresIsWritten = [False] * 3                 # Map figures
-        #self.solution_tree.fileIsWritten = [False] * 4     # Solution figures
-
         self.candidates = []  # Clear candidates when generating new obstacles
         self.edges = []  # Clear edges when generating new obstacles
         self.used_edges = []  # Clear used edges when generating new obstacles
@@ -718,16 +732,32 @@ class Tree:
         return cost
 
     # Update map_figs with deepcopy
-    def update_map_figs(self, bool_values):
+    def update_map_figs(self, id):
 
-        if bool_values == [True, False, False, False, False]:
+        #if bool_values == [True, False, False, False, False]:
+        #    self.map.update_map_fig()
+        #if bool_values == [True, True, False, False, False]:
+        #    self.figures[0] = deepcopy(self.map.fig)
+        #elif bool_values == [True, True, True, False, False]:
+        #    self.figures[1] = deepcopy(self.map.fig)
+        #elif bool_values == [True, True, True, True, False]:
+        #    self.figures[2] = deepcopy(self.map.fig)
+        #elif bool_values[-1] == True:       # The solution
+        #    if not self.post_processed:
+        #        if bool_values[3] == True:
+        #            self.figures[3] = deepcopy(self.map.fig)
+        #        else:
+        #            self.figures[4] = deepcopy(self.map.fig)
+        #    else:
+        #        if bool_values[3] == True:
+        #            self.figures[5] = deepcopy(self.map.fig)
+        #        else:
+        #            self.figures[6] = deepcopy(self.map.fig)
+
+        if id == 0:
             self.map.update_map_fig()
-        if bool_values == [True, True, False, False, False]:
-            self.figures[0] = deepcopy(self.map.fig)
-        elif bool_values == [True, True, True, False, False]:
-            self.figures[1] = deepcopy(self.map.fig)
-        elif bool_values == [True, True, True, True, False]:
-            self.figures[2] = deepcopy(self.map.fig)
+        else:
+            self.figures[id-1] = deepcopy(self.map.fig)
 
     #region Getter
 
@@ -794,7 +824,14 @@ class Tree:
         self.solution_tree.name = name
 
         self.fileIsWritten = [False] * 4
+        
+        self.figuresIsWritten = [False] * 7
+        self.figures = [None] * 7
+
         self.map.fileIsWritten = False
+
+        self.map.figIsWritten = False
+        self.map.figure = None
 
     # endregion
 
