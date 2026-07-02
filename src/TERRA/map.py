@@ -15,11 +15,13 @@ class Map:
         self.map_path = f"data/maps/{self.name}"
         self.map_size = None
         self.obstacles = None
-        self.load_mapdata()     # load map_size, obstacles
         self.mapdataIsWritten = False
 
-        self.map_fig = None
-        self.map_figIsWritten = False
+        self.figure = None
+        self.figureIsWritten = False
+        self.figureName = "environment.png"
+        
+        self.load_mapdata()     # load map_size, obstacles
     
     # Load map data from the mapdata.json file in the map's directory
     def load_mapdata(self):
@@ -40,16 +42,16 @@ class Map:
         except FileNotFoundError:
             raise FileNotFoundError(f"Mapdata file not found in {self.map_path}")
         
-        # Check if the map figure exists, if not, set self.map_figIsWritten to False
-        if not os.path.exists(f"{self.map_path}/map_fig.png"):
-            self.map_figIsWritten = False
+        # Check if the map figure exists, if not, set self.figureIsWritten to False
+        if not os.path.exists(f"{self.map_path}/{self.figureName}"):
+            self.figureIsWritten = False
     
     # Save map data
     def save_mapdata(self):
         # Save map figure
-        if self.map_fig is not None and not self.map_figIsWritten:
-            self.map_fig.savefig(f"{self.map_path}/map_fig_env.png")
-            self.map_figIsWritten = True
+        if self.figure is not None and not self.figureIsWritten:
+            self.figure.savefig(f"{self.map_path}/{self.figureName}")
+            self.figureIsWritten = True
 
         # Save map data
         if self.mapdataIsWritten:
@@ -129,7 +131,7 @@ class Map:
         self.terminals = []  # Clear terminals when generating new obstacles
 
         self.mapDataIsWritten = False
-        self.map_figIsWritten = False
+        self.figureIsWritten = False
     
     def update_map_fig(self):
-        self.map_fig = deepcopy(self.fig)
+        self.figure = deepcopy(self.fig)

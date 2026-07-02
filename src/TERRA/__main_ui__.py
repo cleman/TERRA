@@ -175,8 +175,9 @@ def main():
         bool_values = [False, False, False, False, False]
         for i in range (len(bool_values)-1):
             bool_values[i] = True
-            if (i == 0 and tree.map.map_fig is None) or (i > 0 and tree.maps_fig[i-1] is None):
+            if (i == 0 and tree.map.figure is None) or (i > 0 and tree.figures[i-1] is None):
                 tree.plot(bool_values)
+                tree.map.ax.legend(loc='upper right', fontsize=10)
                 tree.update_map_figs(bool_values)
 
         bool_values = [var.get() for var in view_options_values]

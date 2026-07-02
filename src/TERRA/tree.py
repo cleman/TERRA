@@ -33,6 +33,14 @@ class solutionTree():
         self.links = None              # [ (int, int, double)]
         self.cost = None            # double
 
+        self.figures = [None, None, None, None]
+        self.figuresIsWritten = [False, False, False, False]
+        self.figuresName = ["solution_solver_full.png", "solution_solver.png", "solution_full.png", "solution.png"]
+        # 1: root + terminals + candidates + edges + solution
+        # 2: root + terminals + solution
+        # 3: root + terminals + candidates + edges + post_proc solution
+        # 4: root + terminals + post_proc solution
+
         self.update(name, map_size, obstacles, root, points, terminals, used_relays, used_edges, solution_cost)
         
     
@@ -141,8 +149,9 @@ class Tree:
 
         self.fileIsWritten = [False, False, False, False]       # Terminals, Candidates, Edges, solution
 
-        self.maps_fig = [None, None, None]
-        self.mapsIsWritten = [False, False, False]
+        self.figures = [None, None, None]
+        self.figuresIsWritten = [False, False, False]
+        self.figuresName = ["terminals.png", "candidates.png", "edges.png"]
         # 1: root + terminals
         # 2: root + terminals + candidates
         # 3: root + terminals + candidates + edges
@@ -194,14 +203,6 @@ class Tree:
             self.terminals = None
             raise FileNotFoundError(f"Terminals file not found in {self.map.map_path}")
         
-        # Check if the maps figures exists
-        if not os.path.exists(f"{self.map.map_path}/map_fig_terminals.png"):
-            self.mapsIsWritten[0] = False
-        if not os.path.exists(f"{self.map.map_path}/map_fig_candidates.png"):
-            self.mapsIsWritten[1] = False
-        if not os.path.exists(f"{self.map.map_path}/map_fig_edges.png"):
-            self.mapsIsWritten[2] = False
-        
         # Load candidate points data from the candidates.json file in the map's directory (could not exist)
         try:
             with open(f"{self.map.map_path}/candidates.json") as f:
@@ -248,6 +249,11 @@ class Tree:
             self.fileIsWritten[3] = True
         except FileNotFoundError:
             pass
+
+        # Check if the maps figures exists
+        for i in range (len(self.figuresName)):
+            if not os.path.exists(f"{self.map.map_path}/{self.figuresName[i]}"):
+                self.figuresIsWritten[i] = False
     
     # Save to file
     # Map : map data
@@ -291,17 +297,11 @@ class Tree:
                 json.dump(solution_data, f, indent=2)
             self.fileIsWritten[3] = True
 
-        # Save the map figure
-        if not self.mapsIsWritten[0] and self.maps_fig[0] is not None:
-            self.maps_fig[0].savefig(f"{self.map.map_path}/map_fig_terminals.png")
-            self.mapsIsWritten[0] = True
-        if not self.mapsIsWritten[1] and self.maps_fig[1] is not None:
-            self.maps_fig[1].savefig(f"{self.map.map_path}/map_fig_candidates.png")
-            self.mapsIsWritten[1] = True
-        if not self.mapsIsWritten[2] and self.maps_fig[2] is not None:
-            self.maps_fig[2].savefig(f"{self.map.map_path}/map_fig_edges.png")
-            self.mapsIsWritten[2] = True
-
+        # Save the figures
+        for i in range (len(self.figuresName)):
+            if not self.figuresIsWritten[i] and self.figures[i] is not None:
+                self.figures[i].savefig(f"{self.map.map_path}/{self.figuresName[i]}")
+                self.figuresIsWritten[i] = True
            
     # Compute the figures and axes of the tree
     def plot(self, bool_values=[True, True, False, False, False]):      # bool_values = [Environment, Terminals, Candidates, Edges, Solution]
@@ -357,6 +357,8 @@ class Tree:
             return
         self.previous_grid_parameters = [grid_size, include_obstacles]
         self.fileIsWritten[1:] = [False] * 3
+        self.figuresIsWritten[1:] = [False] * 2
+        #self.solution_tree.fileIsWritten = [False] * 4
 
         # Generate a discrete grid of points in the map, with a given grid size
         self.points = self.points[:1 + len(self.terminals)]
@@ -391,6 +393,8 @@ class Tree:
             return
         self.previous_edges_parameters = [dMax]
         self.fileIsWritten[2:] = [False] * 2
+        self.figuresIsWritten[2:] = [False] * 1
+        #self.solution_tree.fileIsWritten = [False] * 4
 
         # Clear existing edges and solution
         self.edges = []
@@ -421,6 +425,8 @@ class Tree:
         self.update_solution_tree()
 
         self.fileIsWritten[3] = False
+        #self.solution_tree.fileIsWritten[3] = False
+        #self.solution_tree.figuresIsWritten = [False] * 4
 
         #self.used_edges = []  
         #for edge in self.edges:
@@ -431,6 +437,7 @@ class Tree:
     def local_correction(self, dt, tMax, dmin=10, dmax=30, fMax=1000, k=0.0001):
 
         self.fileIsWritten[3] = False
+        #self.solution_tree.fileIsWritten[2:] = False
 
         def compute_forces(p1, p2, dmin, dmax, fMax):   # Forces from p1 towards p2
             dist = compute_distance(p1, p2)
@@ -525,6 +532,7 @@ class Tree:
     # Post-process the solution to go from a discrete solution to a continuous solution, while following the objective function and respecting the constraints of the problem
     def post_processing(self, angle_step=5):
         self.fileIsWritten[3] = False
+        #self.solution_tree.fileIsWritten[2:] = False
 
         # Define relay state: fix or free
         relays_state = [False] * len(self.used_relays)  # True = fixed, False = free
@@ -619,6 +627,9 @@ class Tree:
     # Generate a random map with a given size, number of obstacles and maximum size of obstacles
     def generate_map(self, map_size, num_obstacles, max_size):
         self.map.generate_obstacles(map_size, num_obstacles, max_size)
+
+        self.figuresIsWritten = [False] * 3
+        #self.solution_tree.fileIsWritten = [False] * 4
         
         self.root = None  # Clear racine when generating new obstacles
         self.terminals = []  # Clear terminals when generating new obstacles
@@ -688,7 +699,9 @@ class Tree:
         if len(self.terminals) < nbTerminals:
             raise ValueError("Could not place all terminals within constraints")
 
-        self.fileIsWritten[0] = False
+        self.fileIsWritten[0] = False                       # Data file
+        self.figuresIsWritten = [False] * 3                 # Map figures
+        #self.solution_tree.fileIsWritten = [False] * 4     # Solution figures
 
         self.candidates = []  # Clear candidates when generating new obstacles
         self.edges = []  # Clear edges when generating new obstacles
@@ -710,11 +723,11 @@ class Tree:
         if bool_values == [True, False, False, False, False]:
             self.map.update_map_fig()
         if bool_values == [True, True, False, False, False]:
-            self.maps_fig[0] = deepcopy(self.map.fig)
+            self.figures[0] = deepcopy(self.map.fig)
         elif bool_values == [True, True, True, False, False]:
-            self.maps_fig[1] = deepcopy(self.map.fig)
+            self.figures[1] = deepcopy(self.map.fig)
         elif bool_values == [True, True, True, True, False]:
-            self.maps_fig[2] = deepcopy(self.map.fig)
+            self.figures[2] = deepcopy(self.map.fig)
 
     #region Getter
 
