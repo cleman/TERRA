@@ -159,6 +159,8 @@ class Tree:
     
     # Update solution tree object with current data
     def update_solution_tree(self):
+        self.solution_cost = round(self.tree_score(),2)
+
         self.solution_tree.update(
             self.get_name(), 
             self.get_map_size(), 
