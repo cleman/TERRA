@@ -128,7 +128,7 @@ class Map:
         for _ in range(num_obstacles):
             self.obstacles.append(generate_obstacle(map_size, 8, max_size, self.obstacles))
         
-        self.racine = None  # Clear racine when generating new obstacles
+        self.root = None  # Clear root when generating new obstacles
         self.terminals = []  # Clear terminals when generating new obstacles
 
         self.mapDataIsWritten = False

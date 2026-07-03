@@ -27,7 +27,7 @@ class solutionTree():
         self.name = None                     # str
         self.map_size = None             # double
         self.obstacles = None           # [ [ (x,y) ] ] : double
-        self.racine = None                   # (x,y) : double
+        self.root = None                   # (x,y) : double
         self.terminals = None           # [ (x,y) ] : double
         self.relays = None             # [ (x,y) ] : double
         self.links = None              # [ (int, int, double)]
@@ -40,7 +40,7 @@ class solutionTree():
         self.name = jsonSol["map_name"]
         self.map_size = jsonSol["map_size"]
         self.obstacles = jsonSol["obstacles"]
-        self.racine = jsonSol["racine"]
+        self.root = jsonSol["root"]
         self.terminals = jsonSol["terminals"]
         self.relays = jsonSol["relays"]
         self.links = jsonSol["links"]
@@ -53,7 +53,7 @@ class solutionTree():
             "map_name": self.name,
             "map_size": self.map_size,
             "obstacles": self.obstacles,
-            "racine": self.racine,
+            "root": self.root,
             "terminals": self.terminals,
             "relays": self.relays,
             "links": self.links,
@@ -67,7 +67,7 @@ class solutionTree():
         self.obstacles = obstacles           # [ [ (x,y) ] ] : double
 
         if root != None:
-            self.racine = points[root]                   # (x,y) : double
+            self.root = points[root]                   # (x,y) : double
         
         if len(terminals) != 0:
             self.terminals = [points[i] for i in terminals]           # [ (x,y) ] : double
@@ -82,7 +82,7 @@ class solutionTree():
     
     # Update edges id with clean list
     def update_edges(self, points, links):
-        tree_points = [self.racine] + self.terminals + self.relays
+        tree_points = [self.root] + self.terminals + self.relays
          #print(len(tree_points), len(points))
          #print(tree_points[:10])
          #print(points[:10])
@@ -194,7 +194,7 @@ class Tree:
             self.root = 0
             self.terminals = list(range(1, len(terminals["terminals"])+1))
 
-            self.points = [terminals["racine"]] + terminals["terminals"]
+            self.points = [terminals["root"]] + terminals["terminals"]
 
             self.fileIsWritten[0] = True
         except FileNotFoundError:
@@ -265,7 +265,7 @@ class Tree:
         if not self.fileIsWritten[0]:
             terminals_data = {
                 "map_name": self.map.get_name(),
-                "racine": self.points[0],
+                "root": self.points[0],
                 "terminals": self.points[1:len(self.terminals)+1]
             }
             with open(f"{self.map.map_path}/terminals.json", "w") as f:
@@ -648,7 +648,7 @@ class Tree:
 
         self.map.generate_obstacles(map_size, num_obstacles, max_size)
         
-        self.root = None  # Clear racine when generating new obstacles
+        self.root = None  # Clear root when generating new obstacles
         self.terminals = []  # Clear terminals when generating new obstacles
 
         self.candidates = []  # Clear candidates when generating new obstacles
@@ -665,7 +665,7 @@ class Tree:
         self.figures = [None] * 7
 
         self.terminals = []
-        self.root = None  # Clear racine when generating new terminals
+        self.root = None  # Clear root when generating new terminals
 
         obsPolygons = [Polygon(obs) for obs in self.get_obstacles()]
 
