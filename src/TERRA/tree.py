@@ -358,7 +358,7 @@ class Tree:
         #plt.show()
 
     def generate_discrete_grid(self, grid_size, include_obstacles=True):
-        if self.previous_grid_parameters == [grid_size, include_obstacles]:
+        if self.previous_grid_parameters == [grid_size, include_obstacles] and not self.post_processed:
             return
         self.previous_grid_parameters = [grid_size, include_obstacles]
 
