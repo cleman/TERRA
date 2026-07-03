@@ -25,7 +25,7 @@ def is_point_in_obstacle(point, obstacles):
 def line_intersects_polygon(p1, p2, polygon):
     # décalage de 0.01 pour éviter les problèmes de précision (p1 vers p2 et p2 vers p1)
     delta = (p2[0] - p1[0], p2[1] - p1[1])
-    epsilon = 0.1
+    epsilon = 0.01
     p1_shifted = (p1[0] + epsilon * delta[0], p1[1] + epsilon * delta[1])
     p2_shifted = (p2[0] - epsilon * delta[0], p2[1] - epsilon * delta[1])
     line = LineString([p1_shifted, p2_shifted])
