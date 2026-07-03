@@ -34,7 +34,7 @@ class SolverPage(tk.Frame):
         solver_label.grid(row=0, column=0, padx=5, pady=5, sticky="e")
         #solver_value = tk.StringVar(value="appsi_highs")
 
-        self.solver_name_combobox = ttk.Combobox(solver_parameters_frame, values=["appsi_highs", "cbc_highs"], font=("Arial", 14), state="readonly")
+        self.solver_name_combobox = ttk.Combobox(solver_parameters_frame, values=["appsi_highs", "cbc"], font=("Arial", 14), state="readonly")
         self.solver_name_combobox.current(0)
         self.solver_name_combobox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
@@ -82,6 +82,7 @@ class SolverPage(tk.Frame):
 
         print(f"Solving problem with solver {solver_name} and time limit {time_limit} seconds")
         self.solver.solve(solver_name, time_limit)
+
         print(f"Solution: {self.solver.get_solution()}")
 
         view_configuration = [True, True, False, False, True]

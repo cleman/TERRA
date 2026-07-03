@@ -192,7 +192,6 @@ def main():
             bool_values[i] = True
             if (i == 0 and tree.map.figure is None) or (i > 0 and tree.figures[i-1] is None and is_drawable(i)):
                 tree.plot(bool_values)
-                tree.map.ax.legend(loc='upper right', fontsize=10)
                 tree.update_map_figs(i)
                 plt.close()  # Close the figure
         
@@ -202,13 +201,11 @@ def main():
             if not tree.post_processed:
                 if tree.figures[3] is None:
                     tree.plot(bool_values)
-                    tree.map.ax.legend(loc='upper right', fontsize=10)
                     tree.update_map_figs(4)
                     plt.close()  # Close the figure
             else:
                 if tree.figures[5] is None:
                     tree.plot(bool_values)
-                    tree.map.ax.legend(loc='upper right', fontsize=10)
                     tree.update_map_figs(6)
                     plt.close()  # Close the figure
             
@@ -217,13 +214,11 @@ def main():
             if not tree.post_processed:
                 if tree.figures[4] is None:
                     tree.plot(bool_values)
-                    tree.map.ax.legend(loc='upper right', fontsize=10)
                     tree.update_map_figs(5)
                     plt.close()  # Close the figure
             else:
                 if tree.figures[6] is None:
                     tree.plot(bool_values)
-                    tree.map.ax.legend(loc='upper right', fontsize=10)
                     tree.update_map_figs(7)
                     plt.close()  # Close the figure
 

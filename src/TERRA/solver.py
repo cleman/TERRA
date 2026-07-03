@@ -133,9 +133,13 @@ class Solver:
     def solve(self, solver_name="appsi_highs", time_limit=600):
         self.solver = pyo.SolverFactory(solver_name)
         self.solver.options["timelimit"] = time_limit
-        self.solution = self.solver.solve(self.model, tee=True)
 
-        self.build_solution_from_result()
+        def run_solver():
+            self.solution = self.solver.solve(self.model, tee=True)
+            self.build_solution_from_result()
+
+        run_solver()
+
 
     def build_solution_from_result(self):
         if self.solution is None:

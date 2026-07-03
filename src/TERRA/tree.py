@@ -347,6 +347,10 @@ class Tree:
                 self.map.ax.add_patch(line)
                 labels["used_edge"] = "_nolegend_"  # only show the label for the used edges
 
+        # Add title and legend
+        self.map.ax.set_title(f"Tree: {self.map.get_name()}", fontsize=16)
+        self.map.ax.legend(loc='upper right', fontsize=10)
+
         #plt.grid(True, linestyle='--', alpha=0.3)
         #plt.legend()
         #plt.show()
