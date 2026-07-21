@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 from shapely.geometry import LineString, Polygon
 import random
 import math
+import numpy as np
 
 
 # Compute the minimum distance from a point to a list of points
@@ -84,3 +85,33 @@ def compute_solution_cost(tree):
         dist = compute_distance(p1, p2)
         cost += fcost(dist)
     return cost
+
+
+########### Parameters to move to a config file ###########
+B = 20e6        # Bandwidth in Hz
+Px = 20         # Transmit power in dBm
+N = -90        # Noise power in dBm
+PL_d0 = 40        # Path loss at reference distance d0 in dB
+d0 = 1.0        # reference distance for PLR calculation
+
+def C_PLR_D(dist, C_min=5e6, n=3.5, l=8000):
+    d = dist * 5        # Scale factor to adapt current configuration to something more realistic (for dev only-before creating an adapted map)
+
+    # Path Loss
+    P_loss = PL_d0 + 10 * n * np.log10(d/d0)
+
+    # Signal to Noise Ratio (SNR)
+    SNR = Px - P_loss - N
+
+    # Capacity (Shannon-Hartley theorem)
+    C = B * np.log2(1 + 10**(SNR/10))
+
+    # Packet Loss Rate (PLR)
+    #PLR = 1 - (C / C_min) if C < C_min else 0.0
+    BER = 0.5 * math.erfc(np.sqrt(10**(SNR/10)))
+    PLR = 1 - (1 - BER)**l if C < C_min else 0.0
+
+    # Latency (in seconds)
+    L = l / C if C > 0 else float('inf')
+
+    return C, PLR, L
