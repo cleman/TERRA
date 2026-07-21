@@ -124,6 +124,7 @@ class Map:
     # Generate a random map with a given size, number of obstacles and maximum size of obstacles
     def generate_obstacles(self, map_size, num_obstacles, max_size):
         
+        self.map_size = map_size
         self.obstacles = []
         for _ in range(num_obstacles):
             self.obstacles.append(generate_obstacle(map_size, 8, max_size, self.obstacles))
