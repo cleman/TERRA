@@ -132,7 +132,7 @@ class Solver:
     # Solve the optimization problem using the given solver
     def solve(self, solver_name="appsi_highs", time_limit=600):
         self.solver = pyo.SolverFactory(solver_name)
-        self.solver.options["timelimit"] = time_limit
+        self.solver.options["time_limit"] = time_limit
 
         def run_solver():
             self.solution = self.solver.solve(self.model, tee=True)
