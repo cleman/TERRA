@@ -15,6 +15,8 @@ class Solver:
         self.solution = None
         self.cost_matrix = None
 
+        tree.solver_used = 1  # Mark that this solver is used for the current solution
+
         self.build_cost_matrix()
 
         self.build_model()
