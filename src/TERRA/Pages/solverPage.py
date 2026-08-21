@@ -235,6 +235,11 @@ class SolverPage(tk.Frame):
         beta = float(self.solver_2_beta_spinbox.get())
         gamma = float(self.solver_2_gamma_spinbox.get())
 
+        # Update the physical parameters of the tree
+        self.tree.physical_parameters["C_min"] = unit_capacity * 1e6
+        self.tree.physical_parameters["n_PLE"] = path_loss_exponent
+        self.tree.physical_parameters["l"] = packet_size * 8  # Convert bytes
+
         solver_parameters = {
             "max_relays": max_relays,
             "unit_capacity": unit_capacity,
@@ -245,11 +250,29 @@ class SolverPage(tk.Frame):
             "beta": beta,
             "gamma": gamma
         }
-        
-        self.solver = Solver2(self.tree, solver_parameters)
+        unserved_terminals = []
 
-        print(f"Solving problem with time limit {time_limit} seconds")
-        self.solver.solve(time_limit)
+        passed = False
+        while not passed:
+            self.solver = Solver2(self.tree, solver_parameters, unserved_terminals)
+
+            print(f"Solving problem with time limit {time_limit} seconds")
+            passed = self.solver.solve(time_limit)
+            print(f"Solver returned: {passed}")
+
+
+            if not passed:
+                # Remove the further terminal from the tree and try again
+                terminal_to_remove, _ = self.tree.get_terminal_to_remove(unserved_terminals)
+                if terminal_to_remove is not None:
+                    print(f"Removing furthest terminal {terminal_to_remove} and trying again.")
+                    unserved_terminals += [terminal_to_remove]
+                else:
+                    print("No more terminals to remove. Cannot find a feasible solution.")
+                    break
+
+        # Update unserved terminals in the tree
+        self.tree.set_unserved_terminals(unserved_terminals)
 
         print(f"Solution: {self.solver.get_solution()}")
 

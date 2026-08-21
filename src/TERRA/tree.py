@@ -122,9 +122,22 @@ class Tree:
         self.used_edges = []   # list of edges that are used in the current solution, where each edge is represented as a pair of ids
         self.used_relays = []  # list of candidate points that are used as relays in the current solution, represented as a list of ids
         self.solution_cost = None   # cost of the current solution
+        self.solver_used = None  # optimizer used to compute the current solution
 
         # Boolean flags to indicate if the solution has been post-processed
         self.post_processed = False
+        self.weigts = [0.8, 0.1, 0.1]
+        self.ref_values = [0.05, 0.05, 10]
+
+        # List of unserved_terminals
+        self.unserved_terminals = []
+
+        # Define the physical parameters for the tree
+        self.physical_parameters = {
+            "C_min": 5e6,  # Minimum capacity in bps
+            "n_PLE": 3.5,  # Path loss exponent
+            "l": 8000      # Packet size in bits
+        }
 
         # Solution tree object
         self.solution_tree = solutionTree(
@@ -307,25 +320,30 @@ class Tree:
     # Compute the figures and axes of the tree
     def plot(self, bool_values=[True, True, False, False, False]):      # bool_values = [Environment, Terminals, Candidates, Edges, Solution]
         self.map.compute_fig_ax(bool_values[0])
+
+        size_coef = self.map.map_size/100
         
         labels = {"root": "Root", "terminal": "Terminal", "candidate": "Candidate", "other": "Other", "used_edge": "Used Edge", "edge": "Edge"}
 
         # Draw the points of the tree, with different colors for the root, terminal, candidate and other points
         for idx, point in enumerate(self.points):
             if idx == self.root and bool_values[1]:
-                circle = plt.Circle(point, radius=0.5, color='blue', zorder=5, label=labels["root"])
+                circle = plt.Circle(point, radius=0.5 * size_coef, color='blue', zorder=5, label=labels["root"])
                 labels["root"] = "_nolegend_"  # only show the label for the root point
                 self.map.ax.add_patch(circle)
             elif idx in self.terminals and bool_values[1]:
-                circle = plt.Circle(point, radius=0.5, color='red', zorder=5, label=labels["terminal"])
+                circle = plt.Circle(point, radius=0.5 * size_coef, color='red', zorder=5, label=labels["terminal"])
                 labels["terminal"] = "_nolegend_"  # only show the label for the terminal point
                 self.map.ax.add_patch(circle)
+
+                # Annotate the terminal point with its id
+                self.map.ax.annotate(f"T{idx}", (point[0] + 0.5 * size_coef, point[1] + 0.5 * size_coef), fontsize=10, color='black', zorder=6)
             elif idx in self.candidates and (bool_values[2] or (bool_values[4] and idx in self.used_relays)):
-                circle = plt.Circle(point, radius=0.5, color='green', zorder=5, label=labels["candidate"])
+                circle = plt.Circle(point, radius=0.5 * size_coef, color='green', zorder=5, label=labels["candidate"])
                 labels["candidate"] = "_nolegend_"  # only show the label for the candidate point
                 self.map.ax.add_patch(circle)
             #elif False:
-            #    circle = plt.Circle(point, radius=0.3, color='black', zorder=5, label=labels["other"])
+            #    circle = plt.Circle(point, radius=0.3 * size_coef, color='black', zorder=5, label=labels["other"])
             #    labels["other"] = "_nolegend_"  # only show the label for the other points
             #    self.map.ax.add_patch(circle)
         
@@ -348,6 +366,10 @@ class Tree:
                 line = plt.Line2D([p1[0], p2[0]], [p1[1], p2[1]], color='orange', linewidth=2, zorder=4, label=labels["used_edge"])
                 self.map.ax.add_patch(line)
                 labels["used_edge"] = "_nolegend_"  # only show the label for the used edges
+
+                # Annonte the line with its length
+                dist = compute_distance(p1, p2)
+                self.map.ax.annotate(f"{dist:.1f}", ((p1[0] + p2[0]) / 2, (p1[1] + p2[1]) / 2), fontsize=8, color='black', zorder=6)
 
         # Add title and legend
         self.map.ax.set_title(f"Tree: {self.map.get_name()}", fontsize=16)
@@ -545,6 +567,15 @@ class Tree:
     # Post-process the solution to go from a discrete solution to a continuous solution, while following the objective function and respecting the constraints of the problem
     def post_processing(self, angle_step=5):
 
+        if self.solver_used is None or self.solver_used == 1:
+            tree_score = self.tree_score
+        elif self.solver_used == 2:
+            # Make pre-computations
+            chains = self.build_chains()
+            tree_score = lambda: self.tree_score_network(chains, self.weigts, self.ref_values)
+        else:
+            raise ValueError(f"Unknown solver used: {self.solver_used}")
+
         self.fileIsWritten[1] = False
         self.fileIsWritten[3] = False
         self.figuresIsWritten[5:] = [False] * 2
@@ -556,7 +587,7 @@ class Tree:
         relays_state = [False] * len(self.used_relays)  # True = fixed, False = free
 
         # Compute original cost
-        original_cost = self.tree_score()
+        original_cost = tree_score()
 
         # Continue until all relays are fixed
         while not all(relays_state):
@@ -603,7 +634,7 @@ class Tree:
                 self.points[absolute_relay_id] = new_position
 
                 # Compute new cost
-                new_cost = self.tree_score()
+                new_cost = tree_score()
                  #print(f"New cost with relay {absolute_relay_id} at position {new_position}: {new_cost}")
 
                 # If the new cost is better, keep the new position
@@ -627,6 +658,8 @@ class Tree:
 
         # Update solution tree
         self.update_solution_tree()
+
+        print(f"Post-processing completed. Final cost: {self.solution_cost}. Relays fixed: {relays_state.count(True)}/{len(relays_state)}")
 
     # Write the solution tree with the raw data and add the offset to the relays and edges ids
     def develop_solution(self, raw_data):
@@ -737,6 +770,94 @@ class Tree:
         
         return cost
 
+    def tree_score_network(self, chains, weights = [0.8, 0.1, 0.1], ref_values = [0.05, 0.05, 10]):
+        if any(chain is None or len(chain) == 0 for chain in chains):
+            raise ValueError("Chains cannot be None or empty")
+
+        cost = compute_solution_cost_network(self, chains, weights[:2], ref_values[:2]) + weights[2]*len(self.used_relays)/ref_values[2]
+        
+        return cost
+
+    # Build list of chains of edges, where each chain is represented as a list of edges, starting from each terminal (an edge is represented as a pair of ids and could be used multiple times in different chains)
+    def build_chains(self):
+
+        print(f"Building chains of edges from terminals to root: [0/{len(self.terminals)}]", end="\r")
+
+        chains = []
+        for terminal in self.terminals:
+
+            if terminal in self.unserved_terminals:
+                print(f"Terminal {terminal} is unserved, skipping")
+                chains.append(None)
+                continue
+
+            chain = []
+            current_point = terminal
+            while current_point != self.root:
+                for edge in self.used_edges:
+                    #if edge[0] == current_point:
+                    #    chain.append(edge)
+                    #    current_point = edge[1]
+                    #    break
+                    if edge[1] == current_point:
+                        chain.append(edge)
+                        current_point = edge[0]
+                        break
+                else:
+                    raise ValueError(f"Could not find a path from terminal {terminal} to root {self.root}")
+            chains.append(chain)
+
+            print(f"Building chains of edges from terminals to root: [{len(chains)}/{len(self.terminals)}]", end="\r")
+        print(f"Building chains of edges from terminals to root: [{len(chains)}/{len(self.terminals)}] - Done")
+        return chains
+
+    def get_chain_information(self, chains):
+        C_min, n_PLE, l = self.physical_parameters["C_min"], self.physical_parameters["n_PLE"], self.physical_parameters["l"]
+
+        chain_info = []
+        for i, chain in enumerate(chains):
+            # Skip none or empty chains
+            if chain is None or len(chain) == 0:
+                chain_info.append((f"T{i+1}", "Unserved"))
+                continue
+
+            chain_length = sum(compute_distance(self.points[edge[0]], self.points[edge[1]]) for edge in chain)  # Total length of the chain
+            chain_min_capacity, chain_PLR, chain_delay = compute_chain_metrics(self, chain, C_min, n_PLE, l)  # Compute the metrics of the chain
+            #chain_max_UR = max(compute_UR(self.points[edge[0]], self.points[edge[1]]) for edge in chain)  # Maximum UR of the chain
+
+            chain_max_UR = 0.30           # Max utilization rate of the chain
+            
+            chain_info.append((f"T{i+1}", f"{chain_length:.2f}m/{(chain_min_capacity/1e6):.0f}Mpbs/{(chain_delay*1e3):.2f}ms/{(chain_PLR*100):.0f}%/{(chain_max_UR*100):.0f}%"))
+        return chain_info
+
+    # Find the terminal to remove, based on the distance to the root and the distance to the nearest other terminal
+    def get_terminal_to_remove(self, already_removed_terminals=[]):
+        if self.root is None or self.terminals is None or len(self.terminals) == 0:
+            raise ValueError("Root and terminals must be defined")
+
+        terminal_to_remove = None
+        max_distance_to_root = -float('inf')
+        max_distance_to_other_terminal = -float('inf')
+
+        for terminal in self.terminals:
+            if terminal in already_removed_terminals:
+                continue
+
+            distance_to_root = compute_distance(self.points[self.root], self.points[terminal])
+            distance_to_other_terminal = min(
+                compute_distance(self.points[terminal], self.points[other_terminal])
+                for other_terminal in self.terminals if other_terminal != terminal
+            )
+
+            score = distance_to_root + distance_to_other_terminal
+
+            if score > (max_distance_to_root + max_distance_to_other_terminal):   # <- ">" au lieu de "<"
+                max_distance_to_root = distance_to_root
+                max_distance_to_other_terminal = distance_to_other_terminal
+                terminal_to_remove = terminal
+
+        return terminal_to_remove, max_distance_to_root
+        
     # Update map_figs with deepcopy
     def update_map_figs(self, id):
 
@@ -839,6 +960,11 @@ class Tree:
         self.map.figIsWritten = False
         self.map.figure = None
 
+    # Set the list of unserved terminals
+    def set_unserved_terminals(self, unserved_terminals):
+        self.unserved_terminals = unserved_terminals
+        #self.solution_tree.unserved_terminals = unserved_terminals
+    
     # endregion
 
     # region str representation

@@ -23,22 +23,29 @@ D0 = 0.05
 # endregion
 
 class Solver:
-    def __init__(self, tree, params):
+    def __init__(self, tree, params, terminals_to_remove=[]):
         self.tree = tree
 
         self.max_relays = params.get("max_relays", 10)
         self.unit_capacity = params.get("unit_capacity", C0)*1e6
-        self.plr_max = params.get("plr_max", PLR_max)
+        self.plr_max = params.get("plr_max", PLR_max * 100) / 100
         self.path_loss_exponent = params.get("path_loss_exponent", 3.5)
         self.packet_size = params.get("packet_size", 8 * 1000)
         self.alpha = params.get("alpha", alpha)
         self.beta = params.get("beta", beta)
         self.gamma = params.get("gamma", gamma)
 
+        tree.weights = [self.alpha, self.beta, self.gamma]
+        tree.ref_values = [D0, self.plr_max, self.max_relays]
+
+        self.terminals_to_remove = terminals_to_remove
+
         self.model = None
         self.solver = None
         self.solution = None
         self.score_matrix = None
+
+        tree.solver_used = 2  # Mark that this solver is used for the current solution
 
         self.build_score_matrix()
 
@@ -83,8 +90,18 @@ class Solver:
         # region Nodes indices
         N_indices = [i for i in range(len(points))]             # All nodes indices
         T = [i for i in range(1, nb_terminals + 1)]             # Terminals indices
+
+        # Remove specified terminals from the list of terminals
+        T = [t for t in T if t not in self.terminals_to_remove]
+
         T_extended = [0] + T                                    # Terminals indices with the root matrix
         R = [i for i in range(nb_terminals + 1, len(points))]   # Relays indices
+
+        # Add the unserved terminals to the relays list
+        #for t in self.terminals_to_remove:
+        #    if t not in R:
+        #        R.append(t)
+
         # endregion
         
         # Create the Pyomo model
@@ -114,7 +131,7 @@ class Solver:
 
         # region PLR linearization variables
         model.plr_penalty = pyo.Var(model.T, domain=pyo.NonNegativeReals)  # PLR penalty for each terminal
-        model.log_success = pyo.Var(model.T, domain=pyo.NonNegativeReals, bounds=(min(plr_points), max(plr_points)))  # Logarithm of the success probability for each terminal
+        model.log_success = pyo.Var(model.T, domain=pyo.Reals, bounds=(min(plr_points), max(plr_points)))  # Logarithm of the success probability for each terminal
         # Approximation of the PLR function using piecewise linearization
         model.plr_piecewise = pyo.Piecewise(
             model.T,
@@ -152,9 +169,10 @@ class Solver:
         # region basic constraints
 
         # Flow conservation constraints
+        # Constraint the ratio of incoming and outgoing flows for each node over each terminal's tree
         def flow_conservation_rule(model, k, n):
-            out_arcs = [model.f[k, n, j] for j in model.N if model.C[n, j] > 0]
-            in_arcs = [model.f[k, i, n] for i in model.N if model.C[i, n] > 0]
+            out_arcs = [model.f[k, n, j] for j in model.N if model.C[n, j] > 0] # Outgoing arcs from node n to all other nodes
+            in_arcs = [model.f[k, i, n] for i in model.N if model.C[i, n] > 0]  # Incoming arcs from all other nodes to node n
             
             if not out_arcs and not in_arcs:
                 return pyo.Constraint.Skip if n > nb_terminals else pyo.Constraint.Infeasible
@@ -163,19 +181,21 @@ class Solver:
             in_f = sum(in_arcs)
             
             if n == 0:
-                return out_f - in_f == 1
+                return out_f - in_f == 1                    # The root node has one more outgoing flow than incoming flow (it is the source of the flow)
             elif n == k or (k == 0 and n in model.T):
-                return in_f - out_f == 1
+                return in_f - out_f == 1                    # The terminal node has one more incoming flow than outgoing flow (it is the sink of the flow)
             else: 
-                return in_f - out_f == 0
+                return in_f - out_f == 0                    # All other nodes have the same amount of incoming and outgoing flows (they are relay nodes)
         model.flow_conservation = pyo.Constraint(model.T, model.N, rule=flow_conservation_rule)
 
-        # Global flow sum
+        # Global flow sum (integer)
+        # f0(i,j) count how many times the link (i,j) is used by the terminals
         def global_flow_sum_rule(model, i, j):
             return model.f0[i, j] == sum(model.f[k, i, j] for k in model.T)
         model.global_flow_sum = pyo.Constraint(model.N, model.N, rule=global_flow_sum_rule)
 
-        # Global topology matrix
+        # Global topology matrix (binary)
+        # The global topology matrix is a binary matrix that indicates whether a link (i,j) is used by any terminal's tree.
         def global_topology_rule_1(model, i, j):
             return model.f[0, i, j] <= sum(model.f[k, i, j] for k in model.T)
         def global_topology_rule_2(model, i, j):
@@ -184,6 +204,7 @@ class Solver:
         model.global_topology_2 = pyo.Constraint(model.N, model.N, rule=global_topology_rule_2)
 
         # input/output flow coupling
+        # Constraint the incoming flow of each node (root, terminals, relays)
         def tree_structure_rule(model, k, n):
             incoming_L_vars = [model.f[k, i, n] for i in model.N if model.C[i, n] > 0]
             if not incoming_L_vars:
@@ -191,12 +212,12 @@ class Solver:
             
             incoming_L_sum = sum(incoming_L_vars)
             if n == 0:
-                return incoming_L_sum == 0
+                return incoming_L_sum == 0                  # The root node has no incoming flow
             if n == k or (k == 0 and n in model.T):
-                return incoming_L_sum == 1
+                return incoming_L_sum == 1                  # The terminal node has exactly one incoming flow (in its personal tree)
             else:
-                return incoming_L_sum <= 1
-        model.tree_structure = pyo.Constraint(model.T, model.N, rule=tree_structure_rule)
+                return incoming_L_sum <= 1                  # All other nodes have at most one incoming flow (they are relay nodes) (0 = not used, 1 = used)
+        model.tree_structure = pyo.Constraint(model.T_extended, model.N, rule=tree_structure_rule)
 
         # Maximum number of child nodes
         def degree_out_rule(model, n):
@@ -231,9 +252,9 @@ class Solver:
         model.log_plr_success = pyo.Constraint(model.T, rule=log_plr_success_rule)
 
         # Maximum PLR per terminal
-        #def max_plr_rule(model, k):
-        #    return model.log_success[k] >= math.log(1 - self.plr_max)
-        #model.max_plr = pyo.Constraint(model.T, rule=max_plr_rule)
+        def max_plr_rule(model, k):
+            return model.log_success[k] >= math.log(1 - self.plr_max)
+        model.max_plr = pyo.Constraint(model.T, rule=max_plr_rule)
 
         # Latency computation
         def latency_computation_rule(model, k):
@@ -251,15 +272,36 @@ class Solver:
 
     # Solve the optimization problem using the given solver
     def solve(self, time_limit=600):
-        self.solver = pyo.SolverFactory("appsi_highs")
+        self.solver = pyo.SolverFactory("highs")
         self.solver.options["time_limit"] = time_limit
+        
+        # Configure the persistent/new solver interface not to auto-load on failure
+        if hasattr(self.solver, "config"):
+            self.solver.config.load_solutions = False
 
         def run_solver():
-            self.solution = self.solver.solve(self.model, tee=True)
+            try:
+                self.solution = self.solver.solve(self.model, tee=True)
+            except Exception as e:
+                # Catches NoFeasibleSolutionError or any other solver runtime crash
+                print(f"Solver failed to find a solution: {e}")
+                self.solution = None
+                return False
+
+            # Check the status from the results object
+            if self.solution.solver.termination_condition != pyo.TerminationCondition.optimal:
+                print("No solution found. Termination condition:", self.solution.solver.termination_condition)
+                self.solution = None
+                return False
+
+            # If it was successful, explicitly load the solution back into the model variables
+            if hasattr(self.solver, "load_vars"):
+                self.solver.load_vars()
+                
             self.build_solution_from_result()
+            return True
 
-        run_solver()
-
+        return run_solver()
 
     def build_solution_from_result(self):
         if self.solution is None:

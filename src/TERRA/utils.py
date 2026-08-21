@@ -86,6 +86,75 @@ def compute_solution_cost(tree):
         cost += fcost(dist)
     return cost
 
+def compute_solution_cost_network(tree, chains, weights = [0.8, 0.1, 0.1], ref_values = [0.05, 0.05], limit_values = [5e6, 0.02]):
+    print(f"Computing solution cost: chain [0/{len(chains)}]", end="\r")
+
+    cost = 0
+    for i, chain in enumerate(chains):
+        print(f"Computing solution cost: chain [{i+1}/{len(chains)}]", end="\r")
+        Delay = 0
+        PLR = 1
+        C_bottleneck = float('inf')
+        if chain is None or len(chain) == 0:
+            raise ValueError("Chains cannot be None or empty")
+        for i in range(len(chain)):
+            p1 = tree.points[chain[i][0]]
+            p2 = tree.points[chain[i][1]]
+            dist = compute_distance(p1, p2)
+            C, PLR_ij, D_ij = C_PLR_D(dist)
+
+            if C < C_bottleneck:
+                C_bottleneck = C
+
+            Delay += D_ij
+            PLR *= (1 - PLR_ij)
+
+        PLR = 1 - PLR  # Convert to packet loss rate
+
+        # Check for communication constraints
+        if C_bottleneck < limit_values[0] or PLR > limit_values[1]:
+            print(f"Warning: Communication constraints violated for chain {chain}. C_bottleneck: {C_bottleneck}, PLR: {PLR}")
+            k_coeff = 2
+        else:
+            k_coeff = 1
+
+        cost += (weights[0] * Delay/ref_values[0] + weights[1] * PLR/ref_values[1]) * k_coeff
+
+    print(f"Computing solution cost: chain [{len(chains)}/{len(chains)}] - Done", end="\r")
+    return cost
+
+# Product of the elements of a list
+def product(lst):
+    result = 1
+    for num in lst:
+        result *= num
+    return result
+
+# Compute capacity, PLR and delay of a chain
+def compute_chain_metrics(tree, chain, C_min=5e6, n=3.5, l=8000):
+    Delay = 0
+    PLR = 1
+    C_bottleneck = float('inf')
+
+    if chain is None or len(chain) == 0:
+        raise ValueError("Chains cannot be None or empty")
+
+    for i in range(len(chain)):
+        p1 = tree.points[chain[i][0]]
+        p2 = tree.points[chain[i][1]]
+        dist = compute_distance(p1, p2)
+        C, PLR_ij, D_ij = C_PLR_D(dist, C_min=C_min, n=n, l=l)
+
+        print(f"  edge {chain[i]}: dist={dist:.2f}m  C={C/1e6:.2f}Mbps  PLR_ij={PLR_ij}")  # <- AJOUT
+        if C < C_bottleneck:
+            C_bottleneck = C
+
+        Delay += D_ij
+        PLR *= (1 - PLR_ij)
+
+    PLR = 1 - PLR  # Convert to packet loss rate
+
+    return C_bottleneck, PLR, Delay
 
 ########### Parameters to move to a config file ###########
 B = 20e6        # Bandwidth in Hz
@@ -95,7 +164,7 @@ PL_d0 = 40        # Path loss at reference distance d0 in dB
 d0 = 1.0        # reference distance for PLR calculation
 
 def C_PLR_D(dist, C_min=5e6, n=3.5, l=8000):
-    d = dist * 5        # Scale factor to adapt current configuration to something more realistic (for dev only-before creating an adapted map)
+    d = dist * 1        # Scale factor to adapt current configuration to something more realistic (for dev only-before creating an adapted map)
 
     # Path Loss
     P_loss = PL_d0 + 10 * n * np.log10(d/d0)
@@ -109,7 +178,8 @@ def C_PLR_D(dist, C_min=5e6, n=3.5, l=8000):
     # Packet Loss Rate (PLR)
     #PLR = 1 - (C / C_min) if C < C_min else 0.0
     BER = 0.5 * math.erfc(np.sqrt(10**(SNR/10)))
-    PLR = 1 - (1 - BER)**l if C < C_min else 0.0
+    PLR = 1 - (1 - BER)**l if C >= C_min else 1.0
+    PLR = min(max(PLR, 0.0), 1.0)  # Ensure PLR is between 0 and 1
 
     # Latency (in seconds)
     L = l / C if C > 0 else float('inf')
