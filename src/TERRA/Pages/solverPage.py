@@ -178,7 +178,7 @@ class SolverPage(tk.Frame):
         self.solver_2_beta_spinbox.grid(row=1, column=1, padx=5, pady=5)
 
         # Gamma
-        self.solver_2_gamma_value = tk.DoubleVar(value=0.1)
+        self.solver_2_gamma_value = tk.DoubleVar(value=0.01)
         self.solver_2_gamma_spinbox = tk.Spinbox(solver_2_weights_grid_frame, from_=0.0, to=10.0, width=5, textvariable=self.solver_2_gamma_value, font=("Arial", 14), increment=0.01)
         self.solver_2_gamma_spinbox.grid(row=1, column=2, padx=5, pady=5)
         row_ += 1
