@@ -110,6 +110,34 @@ def main():
     map_view_frame = Frame(view_frame, bg="white", )
     map_view_frame.pack(side=TOP, fill=BOTH, expand=True)
 
+    map_view_frame.grid_columnconfigure(0, weight=4)
+    map_view_frame.grid_columnconfigure(1, weight=1)
+    map_view_frame.grid_rowconfigure(0, weight=1)
+
+    # Map view view frame (square fixed size for the map view, 80% of the height)
+    map_view_view_frame = Frame(map_view_frame, bg="white", relief=GROOVE)
+    map_view_view_frame.grid(row=0, column=0, sticky="nsew")
+
+    # Configure Treeview style
+    style = ttk.Style()
+    style.configure("Treeview", font=("Arial", 12), rowheight=30)
+    style.configure("Treeview.Heading", font=("Arial", 12, "bold"))
+
+    # Create a treeview in the info_grid_frame to display the information about the tree
+    info_tree = ttk.Treeview(map_view_frame, columns=("terminals", "info"), show="headings", height=5)
+    info_tree.grid(row=0, column=1, sticky="nsew")
+
+    # Define headings for the treeview
+    info_tree.heading("terminals", text="Terminals")
+    info_tree.heading("info", text="L(m)/C(mbps)/D(ms)/PLR(%)/UR(%)")
+
+    # Define column widths for the treeview
+    info_tree.column("terminals", width=80, anchor="center")
+    info_tree.column("info", width=270, anchor="center")
+
+    # Insert example line
+    info_tree.insert("", "end", values=("T1", "10m/100Mbps/5.2ms/0.01%/32%"))
+
 
     ### Top bar of the view frame ###
 
@@ -185,6 +213,7 @@ def main():
         plt.close()
         if mapPlot is not None:
             mapPlot.get_tk_widget().destroy()
+            plt.close('all')
 
         # Compute figures for the different view options, if they are not already computed
         bool_values = [False, False, False, False, False]
@@ -233,8 +262,8 @@ def main():
             mapPlot.get_tk_widget().destroy()
         
         tree.plot(bool_values)
-        mapPlot = FigureCanvasTkAgg(tree.map.fig, master=map_view_frame)        # fixed square size for the map view
-        mapPlot.get_tk_widget().pack()
+        mapPlot = FigureCanvasTkAgg(tree.map.fig, master=map_view_view_frame)        # fixed square size for the map view
+        mapPlot.get_tk_widget().pack(side=LEFT, fill=BOTH, expand=True)
 
         # Add legend to the map view
         tree.map.ax.legend(loc='upper right', fontsize=10)
@@ -249,8 +278,18 @@ def main():
         num_candidates_label.config(text=f"Number of candidates: {len(tree.get_candidates())}")
         num_edges_label.config(text=f"Number of edges: {len([a for a in tree.get_edges() if a[2] < 1e10])}")
         num_relays_label.config(text=f"Number of relays: {len(tree.get_used_relays())}")
+
+        # Update the solution labels
         if tree.get_solution_cost() is not None:
             solution_cost_label.config(text=f"Solution cost: {tree.get_solution_cost()}")
+
+            # Update info_tree with the terminals information
+            info_tree.delete(*info_tree.get_children())  # Clear existing entries
+
+            new_data = tree.get_chain_information(tree.build_chains())  # Get the new data for the terminals       e.g.: [("T1", "10m/100Mbps/5.2ms/0.01%/32%")]
+
+            for data in new_data:
+                info_tree.insert("", "end", values=data)
         else:
             solution_cost_label.config(text="Solution cost: N/A")
         
