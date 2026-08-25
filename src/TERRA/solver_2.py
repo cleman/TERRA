@@ -328,7 +328,16 @@ class Solver:
             "cost": cost
         }
 
-        self.tree.set_solution(self.solution_out)
+        self.solution_parameters = {
+            "path_loss_exponent": self.path_loss_exponent,
+            "max_relays": self.max_relays,
+            "unit_throughput": self.unit_capacity,
+            "plr_max": self.plr_max,
+            "packet_size": self.packet_size,
+            "max_utilization_rate": rho_max,
+        }
+
+        self.tree.set_solution(self.solution_out, self.solution_parameters)
 
     # region GETTERS
     ## GETTERS ##

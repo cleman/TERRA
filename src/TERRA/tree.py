@@ -22,49 +22,165 @@ SOLUTION = 4
 
 # Structure representing the full solution by itself
 class solutionTree():
-    def __init__(self, name, map_size, obstacles, root, points, terminals, used_relays, used_edges, solution_cost):
+    def __init__(self, 
+                 name, 
 
-        self.name = None                     # str
-        self.map_size = None             # double
-        self.obstacles = None           # [ [ (x,y) ] ] : double
-        self.root = None                   # (x,y) : double
-        self.terminals = None           # [ (x,y) ] : double
-        self.relays = None             # [ (x,y) ] : double
-        self.links = None              # [ (int, int, double)]
-        self.cost = None            # double
+                 map_size, 
+                 obstacles, 
+                 path_loss_exponent,
 
-        self.update(name, map_size, obstacles, root, points, terminals, used_relays, used_edges, solution_cost)
+                 root, 
+                 points, 
+                 terminals, 
+                 used_relays, 
+                 used_edges, 
+
+                 solution_cost,
+                 unserved_terminals=[],
+                 
+                 max_relays=10,
+
+                 unit_throughput=None,
+                 max_plr=None,
+                 packet_size=None,
+                 max_utilization_rate=None
+                ):
+
+        # Global information
+        self.name = None                  # str                         # Name of the map
+
+        # Environment parameters
+        self.map_size = None              # double                      # Size of the map
+        self.obstacles = None             # [ [ (x,y) ] ] : double      # List of obstacles
+        self.path_loss_exponent = None    # float                       # Path loss exponent used in the solution
+
+        # Tree elements
+        self.root = None                  # (x,y) : double              # Root point
+        self.terminals = None             # [ (x,y) ] : double          # List of terminals
+        self.relays = None                # [ (x,y) ] : double          # List of relays used in the solution
+        self.links = None                 # [ (int, int, double)]       # List of links used in the solution
+
+        # Solution information
+        self.cost = None                  # double                      # Cost of the solution
+        self.unserved_terminals = None    # [ (x,y) ] : double          # List of unserved terminals in the solution
+
+        # Fleet constraints
+        self.max_relays = None            # int                         # Maximum number of relays allowed in the solution
+
+        # Communication constraints
+        self.unit_throughput = None       # double                      # Unit throughput of a flow in bps
+        self.max_plr = None               # double                      # Maximum packet loss rate allowed in the solution
+        self.packet_size = None           # int                         # Packet size in bits used in the solution
+        self.max_utilization_rate = None  # float                       # Maximum utilization rate allowed in the solution
+
+        self.update(
+            name, 
+
+            map_size, 
+            obstacles, 
+            path_loss_exponent, 
+
+            root, 
+            points, 
+            terminals, 
+            used_relays, 
+            used_edges, 
+
+            solution_cost,
+            unserved_terminals,
+
+            max_relays,
+
+            unit_throughput,
+            max_plr,
+            packet_size,
+            max_utilization_rate
+            )
         
     
     def load(self, jsonSol):
+        # Global information
         self.name = jsonSol["map_name"]
+
+        # Environment parameters
         self.map_size = jsonSol["map_size"]
         self.obstacles = jsonSol["obstacles"]
+        self.path_loss_exponent = jsonSol.get("path_loss_exponent", None)
+
+        # Tree elements
         self.root = jsonSol["root"]
         self.terminals = jsonSol["terminals"]
         self.relays = jsonSol["relays"]
         self.links = jsonSol["links"]
+
+        # Solution information
         self.cost = jsonSol["cost"]
+        self.unserved_terminals = jsonSol.get("unserved_terminals", None)
+
+        # Fleet constraint
+        self.max_relays = jsonSol.get("max_relays", None)
+
+        # Communication constraints
+        self.unit_throughput = jsonSol.get("unit_throughput", None)
+        self.max_plr = jsonSol.get("max_plr", None)
+        self.packet_size = jsonSol.get("packet_size", None)
+        self.max_utilization_rate = jsonSol.get("max_utilization_rate", None)
 
         return self.relays, self.links, self.cost
     
     def save(self):
         output = {
             "map_name": self.name,
+
             "map_size": self.map_size,
             "obstacles": self.obstacles,
+            "path_loss_exponent": self.path_loss_exponent,
+
             "root": self.root,
             "terminals": self.terminals,
             "relays": self.relays,
             "links": self.links,
-            "cost": self.cost
+
+            "cost": self.cost,
+            "unserved_terminals": self.unserved_terminals,
+
+            "max_relays": self.max_relays,
+
+            "unit_throughput": self.unit_throughput,
+            "max_plr": self.max_plr,
+            "packet_size": self.packet_size,
+            "max_utilization_rate": self.max_utilization_rate
         }
         return output
     
-    def update(self, name, map_size, obstacles, root, points, terminals, used_relays, used_edges, solution_cost):
+    def update(self,
+            name, 
+
+            map_size, 
+            obstacles, 
+            path_loss_exponent, 
+
+            root, 
+            points, 
+            terminals, 
+            used_relays, 
+            used_edges, 
+
+            solution_cost,
+            unserved_terminals,
+
+            max_relays,
+
+            unit_throughput,
+            max_plr,
+            packet_size,
+            max_utilization_rate
+            ):
         self.name = name                     # str
+
         self.map_size = map_size             # double
         self.obstacles = obstacles           # [ [ (x,y) ] ] : double
+        self.path_loss_exponent = path_loss_exponent   # float
 
         if root != None:
             self.root = points[root]                   # (x,y) : double
@@ -79,6 +195,14 @@ class solutionTree():
             self.links = self.update_edges(points, used_edges)              # [ (int, int, double)]
         
         self.cost = solution_cost            # double
+        self.unserved_terminals = unserved_terminals    # list of unserved terminals
+
+        self.max_relays = max_relays         # int
+
+        self.unit_throughput = unit_throughput       # double
+        self.max_plr = max_plr               # double
+        self.packet_size = packet_size       # int
+        self.max_utilization_rate = max_utilization_rate  # float
     
     # Update edges id with clean list
     def update_edges(self, points, links):
@@ -124,6 +248,14 @@ class Tree:
         self.solution_cost = None   # cost of the current solution
         self.solver_used = None  # optimizer used to compute the current solution
 
+        self.map.path_loss_exponent = None
+        self.unserved_terminals = []
+        self.max_relays = None
+        self.unit_throughput = None
+        self.plr_max = None
+        self.packet_size = None
+        self.max_utilization_rate = None
+
         # Boolean flags to indicate if the solution has been post-processed
         self.post_processed = False
         self.weigts = [0.8, 0.1, 0.1]
@@ -142,14 +274,26 @@ class Tree:
         # Solution tree object
         self.solution_tree = solutionTree(
             self.map.get_name(),
+
             self.map.get_map_size(),
             self.map.get_obstacles(),
+            self.map.path_loss_exponent,
+
             self.root,
             self.points,
             self.terminals,
             self.used_relays,
             self.used_edges,
-            self.solution_cost
+            
+            self.solution_cost,
+            self.unserved_terminals,
+
+            self.max_relays,
+
+            self.unit_throughput,
+            self.plr_max,
+            self.packet_size,
+            self.max_utilization_rate
         )
 
         self.previous_grid_parameters = [-1, None]
@@ -176,14 +320,26 @@ class Tree:
 
         self.solution_tree.update(
             self.get_name(), 
+
             self.get_map_size(), 
             self.get_obstacles(), 
+            self.map.path_loss_exponent,
+
             self.get_root(), 
             self.get_points(), 
             self.get_terminals(),
             self.get_used_relays(), 
             self.get_used_edges(), 
-            self.solution_cost
+
+            self.solution_cost,
+            self.unserved_terminals,
+
+            self.max_relays,
+
+            self.unit_throughput,
+            self.plr_max,
+            self.packet_size,
+            self.max_utilization_rate
         )
     
     # Load the tree data from the tree.json file in the map's directory
@@ -441,7 +597,7 @@ class Tree:
                     edges.append((i, j, dist if dist <= dMax else 1e12))
         self.edges = edges
 
-    def set_solution(self, solution):
+    def set_solution(self, solution, solution_parameters=None):
         self.fileIsWritten[3] = False
         self.figuresIsWritten[3:] = [False] * 4
         self.figures[3:] = [None] * 4
@@ -451,6 +607,15 @@ class Tree:
         self.used_edges = solution["links"]
         self.used_relays = solution["relays"]
         self.solution_cost = solution["cost"]
+
+        self.map.path_loss_exponent = solution_parameters.get("path_loss_exponent", None)
+        self.unserved_terminals = solution.get("unserved_terminals", [])
+        self.max_relays = solution_parameters.get("max_relays", None)
+        self.unit_throughput = solution_parameters.get("unit_throughput", None)
+        self.plr_max = solution_parameters.get("plr_max", None)
+        self.packet_size = solution_parameters.get("packet_size", None)
+        self.max_utilization_rate = solution_parameters.get("max_utilization_rate", None)
+        
 
         print(f"Used edges: {self.used_edges}")
         print(f"Used relays: {self.used_relays}")
