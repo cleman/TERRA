@@ -140,6 +140,15 @@ class SolverPage(tk.Frame):
         row_ += 1
         # endregion
 
+        # region maximum utilization rate per link, default value is 0.8 : rho_max
+        solver_2_rho_max_label = tk.Label(solver_2_parameters_frame, text="Max Utilization Rate:", font=("Arial", 14))
+        solver_2_rho_max_label.grid(row=row_, column=0, padx=5, pady=5, sticky="e")
+        self.solver_2_rho_max_value = tk.DoubleVar(value=0.8)
+        self.solver_2_rho_max_spinbox = tk.Spinbox(solver_2_parameters_frame, from_=0.0, to=1.0, width=5, textvariable=self.solver_2_rho_max_value, font=("Arial", 14), increment=0.01)
+        self.solver_2_rho_max_spinbox.grid(row=row_, column=1, padx=5, pady=5, sticky="w")
+        row_ += 1
+        # endregion
+
         # region Time limit for the solver, default value is 600 seconds
         solver_2_time_label = tk.Label(solver_2_parameters_frame, text="Time Limit (s):", font=("Arial", 14))
         solver_2_time_label.grid(row=row_, column=0, padx=5, pady=5, sticky="e")
@@ -232,6 +241,7 @@ class SolverPage(tk.Frame):
         plr_max = float(self.solver_2_plr_max_spinbox.get())
         path_loss_exponent = float(self.solver_2_path_loss_exponent_spinbox.get())
         packet_size = int(self.solver_2_packet_size_spinbox.get())
+        max_utilization_rate = float(self.solver_2_rho_max_spinbox.get())
         time_limit = int(self.solver_2_time_spinbox.get())
         alpha = float(self.solver_2_alpha_spinbox.get())
         beta = float(self.solver_2_beta_spinbox.get())
@@ -248,6 +258,7 @@ class SolverPage(tk.Frame):
             "plr_max": plr_max,
             "path_loss_exponent": path_loss_exponent,
             "packet_size": packet_size,
+            "max_utilization_rate": max_utilization_rate,
             "alpha": alpha,
             "beta": beta,
             "gamma": gamma

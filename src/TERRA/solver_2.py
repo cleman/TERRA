@@ -31,6 +31,7 @@ class Solver:
         self.plr_max = params.get("plr_max", PLR_max * 100) / 100
         self.path_loss_exponent = params.get("path_loss_exponent", 3.5)
         self.packet_size = params.get("packet_size", 8 * 1000)
+        self.rho_max = params.get("max_utilization_rate", rho_max)
         self.alpha = params.get("alpha", alpha)
         self.beta = params.get("beta", beta)
         self.gamma = params.get("gamma", gamma)
@@ -265,7 +266,7 @@ class Solver:
         def max_congestion_rule(model, i, j):
             if model.C[i, j] == 0 or i == j:
                 return pyo.Constraint.Skip
-            return model.f0[i, j] <= rho_max * model.C[i, j] / C0
+            return model.f0[i, j] <= self.rho_max * model.C[i, j] / C0
         model.max_congestion = pyo.Constraint(model.N, model.N, rule=max_congestion_rule)
 
         self.model = model
@@ -334,7 +335,7 @@ class Solver:
             "unit_throughput": self.unit_throughput,
             "plr_max": self.plr_max,
             "packet_size": self.packet_size,
-            "max_utilization_rate": rho_max,
+            "max_utilization_rate": self.rho_max,
         }
 
         self.tree.set_solution(self.solution_out, self.solution_parameters)
