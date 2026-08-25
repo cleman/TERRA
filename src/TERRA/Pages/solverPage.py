@@ -20,7 +20,7 @@ class SolverPage(tk.Frame):
 
         # Frame for the first solver
         solver_parameters_frame = tk.Frame(self, borderwidth=2, relief="groove")
-        solver_parameters_frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
+        #solver_parameters_frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)         # Line to uncomment to show the first solver parameters frame
 
         # Frame for the second solver
         solver_2_parameters_frame = tk.Frame(self, borderwidth=2, relief="groove")
@@ -77,6 +77,8 @@ class SolverPage(tk.Frame):
         solve_button = tk.Button(solver_parameters_frame, text="Solve", font=("Arial", 14), command=self.solve_problem)
         solve_button.grid(row=6, column=0, columnspan=2, pady=10)
 
+        # endregion
+
 
         ################### Solver 2 (Network-based) parameters ###################
         # region solver 2
@@ -102,12 +104,12 @@ class SolverPage(tk.Frame):
         row_ += 1
         # endregion
 
-        # region Unit capacity of the links, default value is 5e6 (5 Mbps) : C_0
-        solver_2_unit_capacity_label = tk.Label(solver_2_parameters_frame, text="Unit Capacity (Mbps):", font=("Arial", 14))
-        solver_2_unit_capacity_label.grid(row=row_, column=0, padx=5, pady=5, sticky="e")
-        self.solver_2_unit_capacity_value = tk.DoubleVar(value=5)
-        self.solver_2_unit_capacity_spinbox = tk.Spinbox(solver_2_parameters_frame, from_=1, to=1100, width=5, textvariable=self.solver_2_unit_capacity_value, font=("Arial", 14), increment=1)
-        self.solver_2_unit_capacity_spinbox.grid(row=row_, column=1, padx=5, pady=5, sticky="w")
+        # region Unit throughput of the links, default value is 5e6 (5 Mbps) : C_0
+        solver_2_unit_throughput_label = tk.Label(solver_2_parameters_frame, text="Unit Throughput (Mbps):", font=("Arial", 14))
+        solver_2_unit_throughput_label.grid(row=row_, column=0, padx=5, pady=5, sticky="e")
+        self.solver_2_unit_throughput_value = tk.DoubleVar(value=5)
+        self.solver_2_unit_throughput_spinbox = tk.Spinbox(solver_2_parameters_frame, from_=1, to=1100, width=5, textvariable=self.solver_2_unit_throughput_value, font=("Arial", 14), increment=1)
+        self.solver_2_unit_throughput_spinbox.grid(row=row_, column=1, padx=5, pady=5, sticky="w")
         row_ += 1
         # endregion
 
@@ -226,7 +228,7 @@ class SolverPage(tk.Frame):
 
         # Get solver parameters from the GUI
         max_relays = int(self.solver_2_max_relays_spinbox.get())
-        unit_capacity = float(self.solver_2_unit_capacity_spinbox.get())
+        unit_throughput = float(self.solver_2_unit_throughput_spinbox.get())
         plr_max = float(self.solver_2_plr_max_spinbox.get())
         path_loss_exponent = float(self.solver_2_path_loss_exponent_spinbox.get())
         packet_size = int(self.solver_2_packet_size_spinbox.get())
@@ -236,13 +238,13 @@ class SolverPage(tk.Frame):
         gamma = float(self.solver_2_gamma_spinbox.get())
 
         # Update the physical parameters of the tree
-        self.tree.physical_parameters["C_min"] = unit_capacity * 1e6
+        self.tree.physical_parameters["C_min"] = unit_throughput * 1e6
         self.tree.physical_parameters["n_PLE"] = path_loss_exponent
         self.tree.physical_parameters["l"] = packet_size * 8  # Convert bytes
 
         solver_parameters = {
             "max_relays": max_relays,
-            "unit_capacity": unit_capacity,
+            "unit_throughput": unit_throughput,
             "plr_max": plr_max,
             "path_loss_exponent": path_loss_exponent,
             "packet_size": packet_size,

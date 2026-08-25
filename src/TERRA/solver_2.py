@@ -16,7 +16,7 @@ gamma = 0.2
 
 # QOS
 C_min = 5e6       # Mbps, minimum capacity per link
-C0 = 5e6          # Mbps, reference capacity for congestion calculation
+C0 = 5e6          # Mbps, reference throughput for congestion calculation
 PLR_max = 0.05  # maximum packet loss rate per link
 rho_max = 0.8   # maximum congestion per link
 D0 = 0.05
@@ -27,7 +27,7 @@ class Solver:
         self.tree = tree
 
         self.max_relays = params.get("max_relays", 10)
-        self.unit_capacity = params.get("unit_capacity", C0)*1e6
+        self.unit_throughput = params.get("unit_throughput", C0)*1e6
         self.plr_max = params.get("plr_max", PLR_max * 100) / 100
         self.path_loss_exponent = params.get("path_loss_exponent", 3.5)
         self.packet_size = params.get("packet_size", 8 * 1000)
@@ -63,7 +63,7 @@ class Solver:
             if e[2] > 1e10:
                 continue
 
-            capacity, plr, delay = C_PLR_D(e[2], self.unit_capacity, self.path_loss_exponent, self.packet_size)
+            capacity, plr, delay = C_PLR_D(e[2], self.unit_throughput, self.path_loss_exponent, self.packet_size)
 
             if capacity > 0 and plr >= 1.0:
                 plr =  0.8
@@ -331,7 +331,7 @@ class Solver:
         self.solution_parameters = {
             "path_loss_exponent": self.path_loss_exponent,
             "max_relays": self.max_relays,
-            "unit_throughput": self.unit_capacity,
+            "unit_throughput": self.unit_throughput,
             "plr_max": self.plr_max,
             "packet_size": self.packet_size,
             "max_utilization_rate": rho_max,
