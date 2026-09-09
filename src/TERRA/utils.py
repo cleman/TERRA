@@ -69,6 +69,11 @@ def generate_obstacle(map_size, max_vertices, max_size, existing_obstacles):
 
     raise ValueError("Could not place a non-overlapping polygon after 100 attempts")
 
+def dilate_polygon(polygon, d):
+    poly = Polygon(polygon)
+    dilated_poly = poly.buffer(d)
+    return list(dilated_poly.exterior.coords)
+
 ############# COST TO CHANGE #############
 def fcost(dist):
     dist_unit = 10.0

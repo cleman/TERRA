@@ -9,6 +9,7 @@ class generateMapPage(tk.Frame):
         self.refresh_callback = None
         self.mapdata_var = None
         self.terminals_var = None
+        self.dilation_var = None
         self.raise_page_var = None
 
         # region global elements
@@ -24,6 +25,10 @@ class generateMapPage(tk.Frame):
         # Frame for terminals
         terminals_Frame = tk.Frame(self, borderwidth=2, relief="groove")
         terminals_Frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
+
+        # Obstacles dilation frame
+        obstaclesDilation_Frame = tk.Frame(self, borderwidth=2, relief="groove")
+        obstaclesDilation_Frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
 
         # Labels
         tk.Label(mapData_Frame, text="Map Data", font=("Arial", 14)).pack(padx=5, pady=5)
@@ -154,7 +159,53 @@ class generateMapPage(tk.Frame):
         #terminals_Load_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
         # endregion
 
-    
+
+        ################### Obstacles dilation ###################
+
+        # region obstacles dilation frames
+        obstaclesDilation_Top_Frame = tk.Frame(obstaclesDilation_Frame)
+        obstaclesDilation_Top_Frame.pack(side=tk.TOP, fill="x", padx=5, pady=5)
+
+        obstaclesDilation_Labels_Frame = tk.Frame(obstaclesDilation_Top_Frame)
+        obstaclesDilation_Labels_Frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        obstaclesDilation_SpinBoxes_Frame = tk.Frame(obstaclesDilation_Top_Frame)
+        obstaclesDilation_SpinBoxes_Frame.pack(side=tk.RIGHT, fill=tk.BOTH, padx=5, pady=5)
+
+        obstaclesDilation_Buttons_Frame = tk.Frame(obstaclesDilation_Frame)
+        obstaclesDilation_Buttons_Frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # endregion
+
+        # region obstacles dilation labels
+        dilation_networkDilation_Label = tk.Label(obstaclesDilation_Labels_Frame, text="Network dilation", font=("Arial", 14))
+        dilation_physicDilation_Label = tk.Label(obstaclesDilation_Labels_Frame, text="Physic dilation", font=("Arial", 14))
+        # endregion
+
+        # region obstacles dilation spin boxes
+        dilation_networkDilation_Value = tk.StringVar(value="5")
+        dilation_networkDilation_Spinbox = tk.Spinbox(obstaclesDilation_SpinBoxes_Frame, from_=0, to=100, width=10, textvariable=dilation_networkDilation_Value, font=("Arial", 14))
+
+        dilation_physicDilation_Value = tk.StringVar(value="1")
+        dilation_physicDilation_Spinbox = tk.Spinbox(obstaclesDilation_SpinBoxes_Frame, from_=0, to=100, width=10, textvariable=dilation_physicDilation_Value, font=("Arial", 14))
+        # endregion
+
+        # Buttons for obstacles dilation
+        obstaclesDilation_Apply_Button = tk.Button(obstaclesDilation_Buttons_Frame, text="Apply", font=("Arial", 14), command=lambda: self.dilate_obstacles(
+            dilation_networkDilation_Value.get(),
+            dilation_physicDilation_Value.get()
+        ))
+        # endregion
+
+        # region Pack obstacles dilation labels and spin boxes
+        pad_valx = 1
+        pad_valy = 0
+        dilation_networkDilation_Label.pack(padx=pad_valx, pady=pad_valy)
+        dilation_networkDilation_Spinbox.pack(padx=pad_valx, pady=pad_valy)
+        dilation_physicDilation_Label.pack(padx=pad_valx, pady=pad_valy)
+        dilation_physicDilation_Spinbox.pack(padx=pad_valx, pady=pad_valy)
+        obstaclesDilation_Apply_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
+        # endregion
+
     def generate_map(self, map_size, nb_obstacles, size_obstacles):
         print(f"Generating map with size {map_size}, {nb_obstacles} obstacles of size {size_obstacles}")
         # Call the tree method to generate the map
@@ -188,5 +239,22 @@ class generateMapPage(tk.Frame):
         self.raise_page_var.set(0)
 
         # Refresh the map view to show the new terminals
+        if callable(self.refresh_callback):
+            self.refresh_callback()
+
+    def dilate_obstacles(self, network_dilation, physic_dilation):
+        print(f"Applying network dilation of {network_dilation} and physic dilation of {physic_dilation}")
+        # Call the tree method to apply the dilations
+        self.tree.dilate_obstacles(int(network_dilation), int(physic_dilation))
+        print(f"Applied dilations: network {network_dilation}, physic {physic_dilation}")
+
+        # If the dilations view is not enabled, enable it
+        view_configuration = [True, True, False, False, False]
+        if self.dilation_var is not None:
+            for i in range (len(view_configuration)):
+                self.dilation_var[i].set(view_configuration[i])
+        self.raise_page_var.set(0)
+
+        # Refresh the map view to show the updated dilations
         if callable(self.refresh_callback):
             self.refresh_callback()

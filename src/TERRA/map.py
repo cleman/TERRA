@@ -3,7 +3,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 import json
-from utils import generate_obstacle
+from utils import generate_obstacle, dilate_polygon
 
 from copy import deepcopy
 
@@ -15,6 +15,7 @@ class Map:
         self.map_path = f"data/maps/{self.name}"
         self.map_size = None
         self.obstacles = None
+        self.exclusion_zones = None         # Zones formed by the obstacles and the dilation of the obstacles
         self.mapdataIsWritten = False
 
         self.figure = None
@@ -112,11 +113,20 @@ class Map:
         
         # Plot the obstacles
         obstacleLabel = "Obstacle"
+        exclusionZoneLabel = "Exclusion Zone"
         if bool_value:
+            # Draw the obstacles with a label for the legend
             for obs in self.obstacles:
                 polygon = Polygon(obs, closed=True, fill=True, edgecolor='black', facecolor='gray', label=obstacleLabel)
                 obstacleLabel = "_nolegend_"  # only show the label for the first obstacle
                 ax.add_patch(polygon)
+
+            # Draw the exclusion zones with a label for the legend
+            if self.exclusion_zones is not None:
+                for zone in self.exclusion_zones:
+                    polygon = Polygon(zone, closed=True, fill=True, edgecolor='gray', facecolor='gray', alpha=0.25, label=exclusionZoneLabel)
+                    exclusionZoneLabel = "_nolegend_"  # only show the label for the first exclusion zone
+                    ax.add_patch(polygon)
         
         self.fig = fig
         self.ax = ax
@@ -134,6 +144,19 @@ class Map:
 
         self.mapDataIsWritten = False
         self.figureIsWritten = False
-    
+
+    # Apply the dilations to the obstacles and compute the exclusion zones
+    def dilate_obstacles(self, d1, d2):
+        if self.obstacles is None:
+            raise ValueError("Obstacles are None")
+
+        dilation_size = max(d1, d2)
+
+        # Compute the exclusion zones by dilating the obstacles
+        self.exclusion_zones = []
+        for obs in self.obstacles:
+            dilated_obs = dilate_polygon(obs, dilation_size)
+            self.exclusion_zones.append(dilated_obs)
+
     def update_map_fig(self):
         self.figure = deepcopy(self.fig)

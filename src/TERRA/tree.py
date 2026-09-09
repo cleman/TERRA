@@ -927,6 +927,17 @@ class Tree:
         self.used_relays = []  # Clear used relays when generating new obstacles
         self.solution_cost = None  # Clear solution cost when generating new obstacles
 
+    # Apply obstacles dilation
+    def dilate_obstacles(self, d1, d2):
+        self.fileIsWritten[0] = False
+        self.fileIsWritten[1:] = [False] * 3
+        self.figuresIsWritten[0] = False
+        self.figuresIsWritten[1:] = [False] * 6
+        self.figures[0] = None
+        self.figures[1:] = [None] * 6
+
+        self.map.dilate_obstacles(d1, d2)
+
     def tree_score(self):
         if self.used_edges is None or len(self.used_edges) == 0:
             return 0
