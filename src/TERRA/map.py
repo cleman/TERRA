@@ -15,6 +15,8 @@ class Map:
         self.map_path = f"data/maps/{self.name}"
         self.map_size = None
         self.obstacles = None
+        self.exclusion_margin = None
+        self.exclusion_mitre_limit = None
         self.exclusion_zones = None         # Zones formed by the obstacles and the dilation of the obstacles
         self.mapdataIsWritten = False
 
@@ -37,6 +39,8 @@ class Map:
             
             self.map_size = mapdata["map_size"]     # double
             self.obstacles = mapdata["obstacles"]   # list of list of vertices (x, y)
+            self.exclusion_margin = mapdata.get("exclusion_margin", None)  # double
+            self.exclusion_mitre_limit = mapdata.get("exclusion_mitre_limit", None)  # double
             self.exclusion_zones = mapdata.get("exclusion_zones", None)  # list of list of vertices (x, y)
             
             self.mapdataIsWritten = True
@@ -60,6 +64,10 @@ class Map:
             raise ValueError("Map size is None")
         if self.obstacles is None:
             raise ValueError("Obstacles are None")
+        if self.exclusion_margin is None:
+            raise ValueError("Exclusion size is None")
+        if self.exclusion_mitre_limit is None:
+            raise ValueError("Exclusion mitre limit is None")
         if self.exclusion_zones is None:
             raise ValueError("Exclusion zones are None")
         
@@ -76,6 +84,8 @@ class Map:
             "map_name": self.name,
             "map_size": self.map_size,
             "obstacles": self.obstacles,
+            "exclusion_margin": self.exclusion_margin,
+            "exclusion_mitre_limit": self.exclusion_mitre_limit,
             "exclusion_zones": self.exclusion_zones
         }
         with open(f"{self.map_path}/mapdata.json", "w") as f:
@@ -88,9 +98,27 @@ class Map:
         return self.map_size
     
     # Get the list of obstacles, where each obstacle is represented as a list of vertices (x, y)
-    def get_obstacles(self):
-        return self.obstacles
+    def get_obstacles(self, dilated=True):
+        if not dilated:
+            return self.obstacles
+        return self.exclusion_zones
+
+    # Get the size of the exclusion zones
+    def get_exclusion_margin(self):
+        return self.exclusion_margin
+
+    # Get the mitre limit of the exclusion zones
+    def get_exclusion_mitre_limit(self):
+        return self.exclusion_mitre_limit
     
+    # Get the list of exclusion zones, where each zone is represented as a list of vertices (x, y)
+    def get_exclusion_zones(self):
+        return self.exclusion_zones
+
+    # Get the Path Loss Exponent of the map
+    def get_path_loss_exponent(self):
+        return self.path_loss_exponent
+
     # Set the name of the map
     def set_name(self, name):
         self.name = name
@@ -145,24 +173,28 @@ class Map:
         
         self.root = None  # Clear root when generating new obstacles
         self.terminals = []  # Clear terminals when generating new obstacles
+        self.exclusion_zones = None  # Clear exclusion zones when generating new obstacles
 
         self.mapDataIsWritten = False
         self.figureIsWritten = False
 
     # Apply the dilations to the obstacles and compute the exclusion zones
-    def dilate_obstacles(self, d1, d2):
+    def dilate_obstacles(self, d1, d2, mitre_limit):
         if self.obstacles is None:
             raise ValueError("Obstacles are None")
 
-        dilation_size = max(d1, d2)
+        self.exclusion_margin = max(d1, d2)
+        self.exclusion_mitre_limit = mitre_limit
 
-        self.terminals = []  # Clear terminals when dilating obstacles
 
         # Compute the exclusion zones by dilating the obstacles
         self.exclusion_zones = []
         for obs in self.obstacles:
-            dilated_obs = dilate_polygon(obs, dilation_size)
+            dilated_obs = dilate_polygon(obs, self.exclusion_margin, self.exclusion_mitre_limit)
             self.exclusion_zones.append(dilated_obs)
+
+        self.root = None  # Clear root when dilating obstacles
+        self.terminals = []  # Clear terminals when dilating obstacles
 
         if self.exclusion_zones is None:
             raise ValueError("Exclusion zones are None after dilation")

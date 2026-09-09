@@ -69,10 +69,38 @@ def generate_obstacle(map_size, max_vertices, max_size, existing_obstacles):
 
     raise ValueError("Could not place a non-overlapping polygon after 100 attempts")
 
-def dilate_polygon(polygon, d):
+def dilate_polygon(polygon, d, mitre_limit):
     poly = Polygon(polygon)
-    dilated_poly = poly.buffer(d)
+    dilated_poly = poly.buffer(d, quad_segs=16, join_style="mitre", mitre_limit=mitre_limit)  # 2 for round corners
     return list(dilated_poly.exterior.coords)
+
+# Compute the intersection of two lines defined by points p1, p2 and p3, p4
+def compute_line_intersection(p1, p2, p3, p4):
+    # Convert points to numpy arrays for easier calculations
+    p1 = np.array(p1)
+    p2 = np.array(p2)
+    p3 = np.array(p3)
+    p4 = np.array(p4)
+
+    # Calculate the direction vectors of the lines
+    d1 = p2 - p1
+    d2 = p4 - p3
+
+    # Calculate the determinant
+    det = d1[0] * d2[1] - d1[1] * d2[0]
+
+    if det == 0:
+        return None  # Lines are parallel
+
+    # Calculate the parameters for the intersection point
+    t = ((p3[0] - p1[0]) * d2[1] - (p3[1] - p1[1]) * d2[0]) / det
+    u = ((p3[0] - p1[0]) * d1[1] - (p3[1] - p1[1]) * d1[0]) / det
+
+    if 0 <= t <= 1 and 0 <= u <= 1:
+        intersection_point = p1 + t * d1
+        return tuple(intersection_point)
+    
+    return None  # No intersection within the line segments
 
 ############# COST TO CHANGE #############
 def fcost(dist):

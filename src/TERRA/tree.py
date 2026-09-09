@@ -27,6 +27,8 @@ class solutionTree():
 
                  map_size, 
                  obstacles, 
+                 exclusion_margin,
+                 exclusion_mitre_limit,
                  exclusion_zones,
                  path_loss_exponent,
 
@@ -53,6 +55,8 @@ class solutionTree():
         # Environment parameters
         self.map_size = None              # double                      # Size of the map
         self.obstacles = None             # [ [ (x,y) ] ] : double      # List of obstacles
+        self.exclusion_margin = None      # double                      # Size of the exclusion zones
+        self.exclusion_mitre_limit = None # double                      # Mitre limit of the exclusion zones
         self.exclusion_zones = None       # [ [ (x,y) ] ] : double      # List of exclusion zones
         self.path_loss_exponent = None    # float                       # Path loss exponent used in the solution
 
@@ -80,6 +84,8 @@ class solutionTree():
 
             map_size, 
             obstacles, 
+            exclusion_margin,
+            exclusion_mitre_limit,
             exclusion_zones,
             path_loss_exponent, 
 
@@ -108,6 +114,8 @@ class solutionTree():
         # Environment parameters
         self.map_size = jsonSol["map_size"]
         self.obstacles = jsonSol["obstacles"]
+        self.exclusion_margin = jsonSol.get("exclusion_margin", None)
+        self.exclusion_mitre_limit = jsonSol.get("exclusion_mitre_limit", None)
         self.exclusion_zones = jsonSol.get("exclusion_zones", None)
         self.path_loss_exponent = jsonSol.get("path_loss_exponent", None)
 
@@ -138,6 +146,8 @@ class solutionTree():
 
             "map_size": self.map_size,
             "obstacles": self.obstacles,
+            "exclusion_margin": self.exclusion_margin,
+            "exclusion_mitre_limit": self.exclusion_mitre_limit,
             "exclusion_zones": self.exclusion_zones,
             "path_loss_exponent": self.path_loss_exponent,
 
@@ -163,6 +173,8 @@ class solutionTree():
 
             map_size, 
             obstacles, 
+            exclusion_margin,
+            exclusion_mitre_limit,
             exclusion_zones,
             path_loss_exponent, 
 
@@ -185,8 +197,11 @@ class solutionTree():
         self.name = name                     # str
 
         self.map_size = map_size             # double
-        self.obstacles = obstacles           # [ [ (x,y) ] ] : double
-        self.exclusion_zones = exclusion_zones # [ [ (x,y) ] ] : double
+
+        if obstacles is not None: self.obstacles = obstacles           # [ [ (x,y) ] ] : double
+        if exclusion_margin is not None: self.exclusion_margin = exclusion_margin   # double
+        if exclusion_mitre_limit is not None: self.exclusion_mitre_limit = exclusion_mitre_limit   # double
+        if exclusion_zones is not None: self.exclusion_zones = exclusion_zones # [ [ (x,y) ] ] : double
         self.path_loss_exponent = path_loss_exponent   # float
 
         if root != None:
@@ -284,6 +299,9 @@ class Tree:
 
             self.map.get_map_size(),
             self.map.get_obstacles(),
+            self.map.get_exclusion_margin(),
+            self.map.get_exclusion_mitre_limit(),
+            self.map.get_exclusion_zones(),
             self.map.path_loss_exponent,
 
             self.root,
@@ -330,6 +348,9 @@ class Tree:
 
             self.get_map_size(), 
             self.get_obstacles(), 
+            self.get_exclusion_margin(),
+            self.get_exclusion_mitre_limit(),
+            self.get_exclusion_zones(),
             self.map.path_loss_exponent,
 
             self.get_root(), 
@@ -488,6 +509,13 @@ class Tree:
         
         labels = {"root": "Root", "terminal": "Terminal", "candidate": "Candidate", "other": "Other", "used_edge": "Used Edge", "edge": "Edge"}
 
+        # Compute the offset positions for the annotations of the terminal points
+        x_offset_pos = 0.5 * size_coef
+        x_offset_neg = -3.5 * size_coef
+        y_offset_pos = 0.5 * size_coef
+        y_offset_neg = -1.75 * size_coef
+        annotation_offset_positions = [[x_offset_pos, y_offset_pos], [x_offset_neg, y_offset_pos], [x_offset_pos, y_offset_neg], [x_offset_neg, y_offset_neg]]
+
         # Draw the points of the tree, with different colors for the root, terminal, candidate and other points
         for idx, point in enumerate(self.points):
             if idx == self.root and bool_values[1]:
@@ -500,7 +528,15 @@ class Tree:
                 self.map.ax.add_patch(circle)
 
                 # Annotate the terminal point with its id
-                self.map.ax.annotate(f"T{idx}", (point[0] + 0.5 * size_coef, point[1] + 0.5 * size_coef), fontsize=10, color='black', zorder=6)
+
+                # Take the first position that is inside the map
+                annotation_positions = [(point[0] + offset[0], point[1] + offset[1]) for offset in annotation_offset_positions]
+                for pos in annotation_positions:
+                    if pos[0] >= 0 and pos[0] <= self.map.map_size and pos[1] >= 0 and pos[1] <= self.map.map_size:
+                        self.map.ax.annotate(f"T{idx}", (pos[0], pos[1]), fontsize=10, color='black', zorder=6)
+                        break
+                else:
+                    self.map.ax.annotate(f"T{idx}", (point[0] + 0.5 * size_coef, point[1] + 0.5 * size_coef), fontsize=10, color='black', zorder=6)
             elif idx in self.candidates and (bool_values[2] or (bool_values[4] and idx in self.used_relays)):
                 circle = plt.Circle(point, radius=0.5 * size_coef, color='green', zorder=5, label=labels["candidate"])
                 labels["candidate"] = "_nolegend_"  # only show the label for the candidate point
@@ -561,14 +597,33 @@ class Tree:
         self.used_edges = []
         self.used_relays = []
         self.solution_cost = None
-        
+
+        # Add the vertices of the obstacles to the list of points, if include_obstacles is True
         if include_obstacles:
             for obs in self.map.get_obstacles():
                 for vertex in obs:
-                    points.append(vertex)
+                    # Check if the vertex is not inside any other obstacle before adding it to the list of points
+                    if not is_point_in_obstacle(vertex, [o for o in self.map.get_obstacles() if o != obs]):
+                        points.append(vertex)
+
+            # Add the intersections of the obstacles vertices to the list of points
+            for i in range(len(self.map.get_obstacles())):
+                for j in range(i+1, len(self.map.get_obstacles())):
+                    obs1 = self.map.get_obstacles()[i]
+                    obs2 = self.map.get_obstacles()[j]
+                    for k in range(len(obs1)):
+                        p1 = obs1[k]
+                        p2 = obs1[(k+1) % len(obs1)]
+                        for l in range(len(obs2)):
+                            p3 = obs2[l]
+                            p4 = obs2[(l+1) % len(obs2)]
+                            intersection = compute_line_intersection(p1, p2, p3, p4)
+                            if intersection is not None:
+                                points.append(intersection)
 
         offset = int((self.map.get_map_size() % grid_size) / 2)
-        
+
+        # Generate a grid of points in the map
         for x in range(offset, int(self.map.get_map_size()) + grid_size, grid_size):
             for y in range(offset, int(self.map.get_map_size()) + grid_size, grid_size):
                 if not is_point_in_obstacle((x, y), self.map.get_obstacles()) and min_dist((x, y), points + self.points) > grid_size/5:
@@ -865,7 +920,7 @@ class Tree:
         self.solution_cost = None  # Clear solution cost when generating new obstacles
 
     # Generate random terminals with given constraints: number of terminals, minimum distance between terminals, minimum distance to center, and minimum distance to obstacles
-    def generate_terminals(self, nbTerminals, minDist, dist2Center, dist2Obstacles):
+    def generate_terminals(self, nbTerminals, minDist, dist2Center):
         # Clear existing terminals, candidates, edges and solution
         self.fileIsWritten = [False] * 4        # Data file
         self.figuresIsWritten = [False] * 7     # Map figures
@@ -888,7 +943,7 @@ class Tree:
             #if any(point.distance(Point(tx, ty)) < minDist for tx, ty in self.terminals):
             #    print("Root too close to existing terminal, skipping")
             #    continue
-            if any(obs.contains(point) or obs.exterior.distance(point) < dist2Obstacles for obs in obsPolygons):
+            if any(obs.contains(point) for obs in obsPolygons):
                 #print("Root too close to obstacle, skipping")
                 continue
 
@@ -918,7 +973,7 @@ class Tree:
             #if len(self.points) > 1 and min([point.distance(Point(t[0], t[1])) for t in self.points[1:]]) < minDist:
             #    print("Terminal too close to existing terminal, skipping")
             #    continue
-            if any(obs.contains(point) or obs.exterior.distance(point) < dist2Obstacles for obs in obsPolygons):
+            if any(obs.contains(point) for obs in obsPolygons):
                  #print("Terminal too close to obstacle, skipping")
                 continue
 
@@ -935,7 +990,7 @@ class Tree:
         self.solution_cost = None  # Clear solution cost when generating new obstacles
 
     # Apply obstacles dilation
-    def dilate_obstacles(self, d1, d2):
+    def dilate_obstacles(self, d1, d2, mitre_limit=1.0):
         self.fileIsWritten[0] = False
         self.fileIsWritten[1:] = [False] * 3
         self.figuresIsWritten[0] = False
@@ -943,7 +998,15 @@ class Tree:
         self.figures[0] = None
         self.figures[1:] = [None] * 6
 
-        self.map.dilate_obstacles(d1, d2)
+        self.root = None
+        self.terminals = []  # Clear terminals when dilating obstacles
+        self.candidates = []  # Clear candidates when dilating obstacles
+        self.edges = []  # Clear edges when dilating obstacles
+        self.used_edges = []  # Clear used edges when dilating obstacles
+        self.used_relays = []  # Clear used relays when dilating obstacles
+        self.solution_cost = None  # Clear solution cost when dilating obstacles
+
+        self.map.dilate_obstacles(d1, d2, mitre_limit)
 
     def tree_score(self):
         if self.used_edges is None or len(self.used_edges) == 0:
@@ -1076,8 +1139,19 @@ class Tree:
         return self.map.get_map_size()
     
     # Get the list of obstacles, where each obstacle is represented as a list of vertices (x, y)
-    def get_obstacles(self):
-        return self.map.get_obstacles()
+    def get_obstacles(self, dilated=True):
+        return self.map.get_obstacles(dilated)
+
+    # Get the size of the exclusion zones
+    def get_exclusion_margin(self):
+        return self.map.get_exclusion_margin()
+
+    def get_exclusion_mitre_limit(self):
+        return self.map.get_exclusion_mitre_limit()
+
+    # Get the list of exclusion zones, where each exclusion zone is represented as a list of vertices (x, y)
+    def get_exclusion_zones(self):
+        return self.map.get_exclusion_zones()
     
     # Get the name of the map
     def get_name(self):

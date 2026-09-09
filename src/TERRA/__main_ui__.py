@@ -295,6 +295,7 @@ def main():
         
     # Generate map page
     map_page.mapdata_var = view_options_values
+    map_page.dilation_var = view_options_values
     map_page.terminals_var = view_options_values
     map_page.raise_page_var = page_to_raise_int
     map_page.refresh_callback = update_map_view
