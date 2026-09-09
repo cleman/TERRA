@@ -37,6 +37,7 @@ class Map:
             
             self.map_size = mapdata["map_size"]     # double
             self.obstacles = mapdata["obstacles"]   # list of list of vertices (x, y)
+            self.exclusion_zones = mapdata.get("exclusion_zones", None)  # list of list of vertices (x, y)
             
             self.mapdataIsWritten = True
         
@@ -59,6 +60,8 @@ class Map:
             raise ValueError("Map size is None")
         if self.obstacles is None:
             raise ValueError("Obstacles are None")
+        if self.exclusion_zones is None:
+            raise ValueError("Exclusion zones are None")
         
         # Check if the map directory exists, if not create it
         if not os.path.exists(self.map_path):
@@ -72,7 +75,8 @@ class Map:
         mapdata = {
             "map_name": self.name,
             "map_size": self.map_size,
-            "obstacles": self.obstacles
+            "obstacles": self.obstacles,
+            "exclusion_zones": self.exclusion_zones
         }
         with open(f"{self.map_path}/mapdata.json", "w") as f:
             json.dump(mapdata, f, indent=2)
@@ -152,11 +156,19 @@ class Map:
 
         dilation_size = max(d1, d2)
 
+        self.terminals = []  # Clear terminals when dilating obstacles
+
         # Compute the exclusion zones by dilating the obstacles
         self.exclusion_zones = []
         for obs in self.obstacles:
             dilated_obs = dilate_polygon(obs, dilation_size)
             self.exclusion_zones.append(dilated_obs)
+
+        if self.exclusion_zones is None:
+            raise ValueError("Exclusion zones are None after dilation")
+
+        self.mapdataIsWritten = False  # Mark map data as not written since the exclusion zones have changed
+        self.figureIsWritten = False  # Mark figure as not written since the exclusion zones have changed
 
     def update_map_fig(self):
         self.figure = deepcopy(self.fig)

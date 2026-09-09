@@ -22,16 +22,17 @@ class generateMapPage(tk.Frame):
         mapData_Frame = tk.Frame(self, borderwidth=2, relief="groove")
         mapData_Frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
 
-        # Frame for terminals
-        terminals_Frame = tk.Frame(self, borderwidth=2, relief="groove")
-        terminals_Frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
-
         # Obstacles dilation frame
         obstaclesDilation_Frame = tk.Frame(self, borderwidth=2, relief="groove")
         obstaclesDilation_Frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
 
+        # Frame for terminals
+        terminals_Frame = tk.Frame(self, borderwidth=2, relief="groove")
+        terminals_Frame.pack(side=tk.TOP, padx=10, pady=10, fill=tk.X)
+
         # Labels
         tk.Label(mapData_Frame, text="Map Data", font=("Arial", 14)).pack(padx=5, pady=5)
+        tk.Label(obstaclesDilation_Frame, text="Obstacles Dilation", font=("Arial", 14)).pack(padx=5, pady=5)
         tk.Label(terminals_Frame, text="Terminals", font=("Arial", 14)).pack(padx=5, pady=5)
         # endregion
 
@@ -93,6 +94,51 @@ class generateMapPage(tk.Frame):
         #mapData_Load_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
         # endregion
 
+        ################### Obstacles dilation ###################
+        
+        # region obstacles dilation frames
+        obstaclesDilation_Top_Frame = tk.Frame(obstaclesDilation_Frame)
+        obstaclesDilation_Top_Frame.pack(side=tk.TOP, fill="x", padx=5, pady=5)
+
+        obstaclesDilation_Labels_Frame = tk.Frame(obstaclesDilation_Top_Frame)
+        obstaclesDilation_Labels_Frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        obstaclesDilation_SpinBoxes_Frame = tk.Frame(obstaclesDilation_Top_Frame)
+        obstaclesDilation_SpinBoxes_Frame.pack(side=tk.RIGHT, fill=tk.BOTH, padx=5, pady=5)
+
+        obstaclesDilation_Buttons_Frame = tk.Frame(obstaclesDilation_Frame)
+        obstaclesDilation_Buttons_Frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        # endregion
+
+        # region obstacles dilation labels
+        dilation_networkDilation_Label = tk.Label(obstaclesDilation_Labels_Frame, text="Network dilation", font=("Arial", 14))
+        dilation_physicDilation_Label = tk.Label(obstaclesDilation_Labels_Frame, text="Physic dilation", font=("Arial", 14))
+        # endregion
+
+        # region obstacles dilation spin boxes
+        dilation_networkDilation_Value = tk.StringVar(value="5")
+        dilation_networkDilation_Spinbox = tk.Spinbox(obstaclesDilation_SpinBoxes_Frame, from_=0, to=100, width=10, textvariable=dilation_networkDilation_Value, font=("Arial", 14))
+
+        dilation_physicDilation_Value = tk.StringVar(value="1")
+        dilation_physicDilation_Spinbox = tk.Spinbox(obstaclesDilation_SpinBoxes_Frame, from_=0, to=100, width=10, textvariable=dilation_physicDilation_Value, font=("Arial", 14))
+        # endregion
+
+        # Buttons for obstacles dilation
+        obstaclesDilation_Apply_Button = tk.Button(obstaclesDilation_Buttons_Frame, text="Apply", font=("Arial", 14), command=lambda: self.dilate_obstacles(
+            dilation_networkDilation_Value.get(),
+            dilation_physicDilation_Value.get()
+        ))
+        # endregion
+
+        # region Pack obstacles dilation labels and spin boxes
+        pad_valx = 1
+        pad_valy = 0
+        dilation_networkDilation_Label.pack(padx=pad_valx, pady=pad_valy)
+        dilation_networkDilation_Spinbox.pack(padx=pad_valx, pady=pad_valy)
+        dilation_physicDilation_Label.pack(padx=pad_valx, pady=pad_valy)
+        dilation_physicDilation_Spinbox.pack(padx=pad_valx, pady=pad_valy)
+        obstaclesDilation_Apply_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
+        # endregion
 
         ################### Terminals and root ###################
 
@@ -157,53 +203,6 @@ class generateMapPage(tk.Frame):
         terminals_Generate_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
         #terminals_Save_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
         #terminals_Load_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
-        # endregion
-
-
-        ################### Obstacles dilation ###################
-
-        # region obstacles dilation frames
-        obstaclesDilation_Top_Frame = tk.Frame(obstaclesDilation_Frame)
-        obstaclesDilation_Top_Frame.pack(side=tk.TOP, fill="x", padx=5, pady=5)
-
-        obstaclesDilation_Labels_Frame = tk.Frame(obstaclesDilation_Top_Frame)
-        obstaclesDilation_Labels_Frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
-
-        obstaclesDilation_SpinBoxes_Frame = tk.Frame(obstaclesDilation_Top_Frame)
-        obstaclesDilation_SpinBoxes_Frame.pack(side=tk.RIGHT, fill=tk.BOTH, padx=5, pady=5)
-
-        obstaclesDilation_Buttons_Frame = tk.Frame(obstaclesDilation_Frame)
-        obstaclesDilation_Buttons_Frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True, padx=5, pady=5)
-        # endregion
-
-        # region obstacles dilation labels
-        dilation_networkDilation_Label = tk.Label(obstaclesDilation_Labels_Frame, text="Network dilation", font=("Arial", 14))
-        dilation_physicDilation_Label = tk.Label(obstaclesDilation_Labels_Frame, text="Physic dilation", font=("Arial", 14))
-        # endregion
-
-        # region obstacles dilation spin boxes
-        dilation_networkDilation_Value = tk.StringVar(value="5")
-        dilation_networkDilation_Spinbox = tk.Spinbox(obstaclesDilation_SpinBoxes_Frame, from_=0, to=100, width=10, textvariable=dilation_networkDilation_Value, font=("Arial", 14))
-
-        dilation_physicDilation_Value = tk.StringVar(value="1")
-        dilation_physicDilation_Spinbox = tk.Spinbox(obstaclesDilation_SpinBoxes_Frame, from_=0, to=100, width=10, textvariable=dilation_physicDilation_Value, font=("Arial", 14))
-        # endregion
-
-        # Buttons for obstacles dilation
-        obstaclesDilation_Apply_Button = tk.Button(obstaclesDilation_Buttons_Frame, text="Apply", font=("Arial", 14), command=lambda: self.dilate_obstacles(
-            dilation_networkDilation_Value.get(),
-            dilation_physicDilation_Value.get()
-        ))
-        # endregion
-
-        # region Pack obstacles dilation labels and spin boxes
-        pad_valx = 1
-        pad_valy = 0
-        dilation_networkDilation_Label.pack(padx=pad_valx, pady=pad_valy)
-        dilation_networkDilation_Spinbox.pack(padx=pad_valx, pady=pad_valy)
-        dilation_physicDilation_Label.pack(padx=pad_valx, pady=pad_valy)
-        dilation_physicDilation_Spinbox.pack(padx=pad_valx, pady=pad_valy)
-        obstaclesDilation_Apply_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
         # endregion
 
     def generate_map(self, map_size, nb_obstacles, size_obstacles):

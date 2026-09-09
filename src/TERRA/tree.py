@@ -27,6 +27,7 @@ class solutionTree():
 
                  map_size, 
                  obstacles, 
+                 exclusion_zones,
                  path_loss_exponent,
 
                  root, 
@@ -52,6 +53,7 @@ class solutionTree():
         # Environment parameters
         self.map_size = None              # double                      # Size of the map
         self.obstacles = None             # [ [ (x,y) ] ] : double      # List of obstacles
+        self.exclusion_zones = None       # [ [ (x,y) ] ] : double      # List of exclusion zones
         self.path_loss_exponent = None    # float                       # Path loss exponent used in the solution
 
         # Tree elements
@@ -78,6 +80,7 @@ class solutionTree():
 
             map_size, 
             obstacles, 
+            exclusion_zones,
             path_loss_exponent, 
 
             root, 
@@ -105,6 +108,7 @@ class solutionTree():
         # Environment parameters
         self.map_size = jsonSol["map_size"]
         self.obstacles = jsonSol["obstacles"]
+        self.exclusion_zones = jsonSol.get("exclusion_zones", None)
         self.path_loss_exponent = jsonSol.get("path_loss_exponent", None)
 
         # Tree elements
@@ -134,6 +138,7 @@ class solutionTree():
 
             "map_size": self.map_size,
             "obstacles": self.obstacles,
+            "exclusion_zones": self.exclusion_zones,
             "path_loss_exponent": self.path_loss_exponent,
 
             "root": self.root,
@@ -158,6 +163,7 @@ class solutionTree():
 
             map_size, 
             obstacles, 
+            exclusion_zones,
             path_loss_exponent, 
 
             root, 
@@ -180,6 +186,7 @@ class solutionTree():
 
         self.map_size = map_size             # double
         self.obstacles = obstacles           # [ [ (x,y) ] ] : double
+        self.exclusion_zones = exclusion_zones # [ [ (x,y) ] ] : double
         self.path_loss_exponent = path_loss_exponent   # float
 
         if root != None:
