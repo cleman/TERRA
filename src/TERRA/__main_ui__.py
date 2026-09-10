@@ -9,6 +9,8 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 
+import os
+import json
 from os import listdir
 
 from Pages.genMapPage import generateMapPage
@@ -24,8 +26,44 @@ def change_page(page):
     print(f"Changing page to {page.__class__.__name__}")
     page.tkraise()
 
+CONFIG_PATH = "data/config.json"
+
+# Load config file config
+def _load_config():
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+# Get last map name from the config file
+def get_last_map(default="map_template"):
+    config = _load_config()
+    name = config.get("last_map", default)
+
+    try:
+        valid_maps = listdir("data/maps")
+    except FileNotFoundError:
+        return default
+
+    if not name or name not in valid_maps:
+        return default
+    return name
+    
+
+def set_last_map(map_name="map_template"):
+    config = _load_config()
+    config["last_map"] = map_name
+    os.makedirs(os.path.dirname(CONFIG_PATH), exist_ok=True)
+    with open(CONFIG_PATH, "w") as f:
+        json.dump(config, f, indent=4)
+
 def main():
-    tree = Tree("map2")
+    print("Starting TERRA...")
+    print("Loading last map...")
+    print(f"Last map: {get_last_map()}")
+    set_last_map(get_last_map())
+    tree = Tree(get_last_map())
     solver = None
 
     # Init window
@@ -148,12 +186,12 @@ def main():
     # Map name entry and buttons
     map_name_label = Label(view_top_bar, text="Map Name:", font=("Arial", 14), bg="white")
     map_name_label.pack(padx=10, pady=10, side=LEFT)
-    map_name_value = StringVar(value="map2")
+    map_name_value = StringVar(value=get_last_map())
     map_name_entry = ttk.Combobox(view_top_bar, width=20, font=("Arial", 14), textvariable=map_name_value, values=maps_list)
     map_name_entry.pack(padx=10, pady=10, side=LEFT)
 
     # Load map
-    load_button = Button(view_top_bar, text="Load Map", font=("Arial", 14), command=lambda: [tree.__init__(map_name_value.get()), update_map_view()])
+    load_button = Button(view_top_bar, text="Load Map", font=("Arial", 14), command=lambda: [tree.__init__(map_name_value.get()), set_last_map(tree.get_name()), update_map_view()])
     load_button.pack(padx=10, pady=10, side=LEFT)
 
     def save_map():
