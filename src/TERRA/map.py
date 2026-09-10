@@ -3,7 +3,7 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 import json
-from utils import generate_obstacle, dilate_polygon
+from utils import generate_obstacle, generate_rectangle, dilate_polygon
 
 from copy import deepcopy
 
@@ -138,7 +138,7 @@ class Map:
         return self.__str__()
     
     # Compute the figures and axes of the map for plotting purposes
-    def compute_fig_ax(self, bool_value, include_obstacles=True):        
+    def compute_fig_ax(self, bool_value, include_obstacles=False):        
         fig, ax = plt.subplots(figsize=(10, 10))
         ax.set_xlim(0, self.map_size)
         ax.set_ylim(0, self.map_size)
@@ -164,12 +164,17 @@ class Map:
         self.ax = ax
     
     # Generate a random map with a given size, number of obstacles and maximum size of obstacles
-    def generate_obstacles(self, map_size, num_obstacles, max_size):
+    def generate_obstacles(self, map_size, num_obstacles, max_size, rectangle=True):
         
         self.map_size = map_size
         self.obstacles = []
-        for _ in range(num_obstacles):
-            self.obstacles.append(generate_obstacle(map_size, 8, max_size, self.obstacles))
+
+        if not rectangle:
+            for _ in range(num_obstacles):
+                self.obstacles.append(generate_obstacle(map_size, 8, max_size, self.obstacles))
+        else:
+            for _ in range(num_obstacles):
+                self.obstacles.append(generate_rectangle(map_size, max_size, self.obstacles))
         
         self.root = None  # Clear root when generating new obstacles
         self.terminals = []  # Clear terminals when generating new obstacles

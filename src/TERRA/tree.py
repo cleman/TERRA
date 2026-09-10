@@ -902,13 +902,13 @@ class Tree:
         return self.used_relays, self.used_edges, self.solution_cost
 
     # Generate a random map with a given size, number of obstacles and maximum size of obstacles
-    def generate_map(self, map_size, num_obstacles, max_size):
+    def generate_map(self, map_size, num_obstacles, max_size, is_rectangle):
         # Clear existing data
         self.fileIsWritten = [False] * 4
         self.figuresIsWritten = [False] * 7
         self.figures = [None] * 7
 
-        self.map.generate_obstacles(map_size, num_obstacles, max_size)
+        self.map.generate_obstacles(map_size, num_obstacles, max_size, is_rectangle)
         
         self.root = None  # Clear root when generating new obstacles
         self.terminals = []  # Clear terminals when generating new obstacles

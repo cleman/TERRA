@@ -69,6 +69,22 @@ def generate_obstacle(map_size, max_vertices, max_size, existing_obstacles):
 
     raise ValueError("Could not place a non-overlapping polygon after 100 attempts")
 
+# Function to generate a random rectangle without overlap
+def generate_rectangle(map_size, max_size, existing_obstacles):
+    for _ in range(100):  # Try up to 100 times to find a non-overlapping rectangle
+        width = random.uniform(0.2*max_size, max_size)
+        height = random.uniform(0.2*max_size, max_size)
+        x = random.uniform(0, map_size - width)
+        y = random.uniform(0, map_size - height)
+
+        rectangle = [(x, y), (x + width, y), (x + width, y + height), (x, y + height)]
+
+        # Check for overlap
+        if not any(polygons_overlap(rectangle, obs) for obs in existing_obstacles):
+            return rectangle
+
+    raise ValueError("Could not place a non-overlapping rectangle after 100 attempts")
+
 def dilate_polygon(polygon, d, mitre_limit):
     poly = Polygon(polygon)
     dilated_poly = poly.buffer(d, quad_segs=16, join_style="mitre", mitre_limit=mitre_limit)  # 2 for round corners

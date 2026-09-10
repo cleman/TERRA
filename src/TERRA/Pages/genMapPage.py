@@ -57,6 +57,7 @@ class generateMapPage(tk.Frame):
         mapData_MapSize_Label = tk.Label(mapData_Labels_Frame, text="Map Size", font=("Arial", 14))
         mapData_NbObstacles_Label = tk.Label(mapData_Labels_Frame, text="Number of Obstacles", font=("Arial", 14))
         mapData_SizeObstacles_Label = tk.Label(mapData_Labels_Frame, text="Size of Obstacles", font=("Arial", 14))
+        mapData_IsRectangle_Label = tk.Label(mapData_Labels_Frame, text="Obstacles are rectangles", font=("Arial", 14))
         # endregion
 
         # region mapdata spin boxes
@@ -68,13 +69,17 @@ class generateMapPage(tk.Frame):
 
         mapData_SizeObstacles_Value = tk.StringVar(value="20")
         mapData_SizeObstacles_Spinbox = tk.Spinbox(mapData_SpinBoxes_Frame, from_=0, to=100, width=10, textvariable=mapData_SizeObstacles_Value, font=("Arial", 14))
+
+        mapData_IsRectangle_Value = tk.BooleanVar(value=False)
+        mapData_IsRectangle_Checkbutton = tk.Checkbutton(mapData_SpinBoxes_Frame, variable=mapData_IsRectangle_Value, font=("Arial", 14))
         # endregion
 
         # regionButtons for map data
         mapData_Generate_Button = tk.Button(mapData_Buttons_Frame, text="Generate", font=("Arial", 14), command=lambda: self.generate_map(
             mapData_MapSize_Value.get(), 
             mapData_NbObstacles_Value.get(), 
-            mapData_SizeObstacles_Value.get()
+            mapData_SizeObstacles_Value.get(),
+            mapData_IsRectangle_Value.get()
         ))
         #mapData_Save_Button = tk.Button(mapData_Buttons_Frame, text="Save", font=("Arial", 14))#, command=lambda: self.save_map(mapData_MapSize_Value.get(), mapData_NbObstacles_Value.get(), mapData_SizeObstacles_Value.get()))
         #mapData_Load_Button = tk.Button(mapData_Buttons_Frame, text="Load", font=("Arial", 14))#, command=lambda: self.load_map(mapData_MapSize_Value.get(), mapData_NbObstacles_Value.get(), mapData_SizeObstacles_Value.get()))
@@ -89,6 +94,8 @@ class generateMapPage(tk.Frame):
         mapData_NbObstacles_Spinbox.pack(padx=pad_valx, pady=pad_valy)
         mapData_SizeObstacles_Label.pack(padx=pad_valx, pady=pad_valy)
         mapData_SizeObstacles_Spinbox.pack(padx=pad_valx, pady=pad_valy)
+        mapData_IsRectangle_Label.pack(padx=pad_valx, pady=pad_valy)
+        mapData_IsRectangle_Checkbutton.pack(padx=pad_valx, pady=pad_valy)
         mapData_Generate_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
         #mapData_Save_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
         #mapData_Load_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
@@ -206,10 +213,10 @@ class generateMapPage(tk.Frame):
         #terminals_Load_Button.pack(fill="x", padx=pad_valx, pady=pad_valy)
         # endregion
 
-    def generate_map(self, map_size, nb_obstacles, size_obstacles):
-        print(f"Generating map with size {map_size}, {nb_obstacles} obstacles of size {size_obstacles}")
+    def generate_map(self, map_size, nb_obstacles, size_obstacles, is_rectangle):
+        print(f"Generating map with size {map_size}, {nb_obstacles} obstacles of size {size_obstacles}, is rectangle: {is_rectangle}")
         # Call the tree method to generate the map
-        self.tree.generate_map(int(map_size), int(nb_obstacles), int(size_obstacles))
+        self.tree.generate_map(int(map_size), int(nb_obstacles), int(size_obstacles), bool(is_rectangle))
         print(f"Number of obstacles: {len(self.tree.get_obstacles(False))}")
 
         view_configuration = [True, False, False, False, False]
