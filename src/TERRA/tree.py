@@ -582,6 +582,7 @@ class Tree:
         if self.previous_grid_parameters == [grid_size, include_obstacles] and not self.post_processed:
             return
         self.previous_grid_parameters = [grid_size, include_obstacles]
+        self.previous_edges_parameters = []
 
         self.fileIsWritten[1:] = [False] * 3
         self.figuresIsWritten[1:] = [False] * 6
@@ -928,6 +929,9 @@ class Tree:
 
         self.terminals = []
         self.root = None  # Clear root when generating new terminals
+
+        self.previous_grid_parameters = [-1, None]
+        self.previous_edges_parameters = [-1]
 
         obsPolygons = [Polygon(obs) for obs in self.get_obstacles()]
 

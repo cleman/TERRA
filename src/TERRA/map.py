@@ -99,7 +99,7 @@ class Map:
     
     # Get the list of obstacles, where each obstacle is represented as a list of vertices (x, y)
     def get_obstacles(self, dilated=True):
-        if not dilated:
+        if not dilated or self.exclusion_zones is None:
             return self.obstacles
         return self.exclusion_zones
 
