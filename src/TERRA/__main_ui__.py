@@ -231,6 +231,7 @@ def main():
     exit_button = Button(view_top_bar, text="Exit", font=("Arial", 14), command=window.quit)
     exit_button.pack(padx=10, pady=10, side=RIGHT)
 
+    # Function to check if the current view is drawable based on the tree state
     def is_drawable(index):
         if index == 0:
             return True
@@ -245,6 +246,7 @@ def main():
         else:
             return False
 
+    # Function to update the map view based on the selected options and the current state of the tree
     def update_map_view():
         global mapPlot
         # Close previous plot

@@ -518,11 +518,11 @@ class Tree:
 
         # Draw the points of the tree, with different colors for the root, terminal, candidate and other points
         for idx, point in enumerate(self.points):
-            if idx == self.root and bool_values[1]:
+            if idx == self.root and (bool_values[1] or bool_values[4]):
                 circle = plt.Circle(point, radius=0.5 * size_coef, color='blue', zorder=5, label=labels["root"])
                 labels["root"] = "_nolegend_"  # only show the label for the root point
                 self.map.ax.add_patch(circle)
-            elif idx in self.terminals and bool_values[1]:
+            elif idx in self.terminals and (bool_values[1] or bool_values[4]):
                 circle = plt.Circle(point, radius=0.5 * size_coef, color='red', zorder=5, label=labels["terminal"])
                 labels["terminal"] = "_nolegend_"  # only show the label for the terminal point
                 self.map.ax.add_patch(circle)
