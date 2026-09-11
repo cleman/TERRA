@@ -793,8 +793,9 @@ class Tree:
         self.update_solution_tree()
 
     # Post-process the solution to go from a discrete solution to a continuous solution, while following the objective function and respecting the constraints of the problem
-    def post_processing(self, angle_step=5):
+    def post_processing(self, angle_step=5, stepLength=1):
 
+        # Select the tree score function based on the solver used
         if self.solver_used is None or self.solver_used == 1:
             tree_score = self.tree_score
         elif self.solver_used == 2:
@@ -804,11 +805,11 @@ class Tree:
         else:
             raise ValueError(f"Unknown solver used: {self.solver_used}")
 
+        # Reset the fileIsWritten and figuresIsWritten flags for the solution and post-processed solution
         self.fileIsWritten[1] = False
         self.fileIsWritten[3] = False
         self.figuresIsWritten[5:] = [False] * 2
         self.figures[5:] = [None] * 2
-
         self.post_processed = True
 
         # Define relay state: fix or free
@@ -837,8 +838,8 @@ class Tree:
                  #print(f"Trying angle {angle}° for relay {absolute_relay_id}")
 
                 # Compute new position of the relay
-                new_position = self.points[absolute_relay_id]
-                new_position = [new_position[0] + math.cos(math.radians(angle)), new_position[1] + math.sin(math.radians(angle))]
+                og_position = self.points[absolute_relay_id]
+                new_position = [og_position[0] + stepLength * math.cos(math.radians(angle)), og_position[1] + stepLength * math.sin(math.radians(angle))]
 
                 # Check if the new position is valid (not in obstacle and not too close to other points)
                 if is_point_in_obstacle(new_position, self.map.get_obstacles()):

@@ -253,11 +253,11 @@ class generateMapPage(tk.Frame):
         print(f"Applying network dilation of {network_dilation} and physic dilation of {physic_dilation}")
         # Call the tree method to apply the dilations
 
-        if int(mitre_limit) == -1:
-            mitre_limit = int(max(int(network_dilation), int(physic_dilation)) / 5)
+        if float(mitre_limit) == -1:
+            mitre_limit = float(max(float(network_dilation), float(physic_dilation)) / 5)
         else:
-            mitre_limit = int(mitre_limit)
-        self.tree.dilate_obstacles(int(network_dilation), int(physic_dilation), mitre_limit=mitre_limit)
+            mitre_limit = float(mitre_limit)
+        self.tree.dilate_obstacles(float(network_dilation), float(physic_dilation), mitre_limit=mitre_limit)
         print(f"Applied dilations: network {network_dilation}, physic {physic_dilation}, mitre limit {mitre_limit}")
 
         # If the dilations view is not enabled, enable it
