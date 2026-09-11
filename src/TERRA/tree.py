@@ -619,7 +619,7 @@ class Tree:
                             p3 = obs2[l]
                             p4 = obs2[(l+1) % len(obs2)]
                             intersection = compute_line_intersection(p1, p2, p3, p4)
-                            if intersection is not None:
+                            if intersection is not None and not is_point_in_obstacle(intersection, [o for o in self.map.get_obstacles() if o != obs1 and o != obs2]):
                                 points.append(intersection)
 
         offset = int((self.map.get_map_size() % grid_size) / 2)
