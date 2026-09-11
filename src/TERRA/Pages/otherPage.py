@@ -106,13 +106,20 @@ class otherPage(tk.Frame):
         angle_step_label = tk.Label(postProcessing_frame, text="Angle step:")
         angle_step_label.grid(row=1, column=0, padx=1, pady=5, sticky="e")
 
+        step_length_label = tk.Label(postProcessing_frame, text="Step length:")
+        step_length_label.grid(row=2, column=0, padx=1, pady=5, sticky="e")
+
         self.angle_step_value = tk.DoubleVar(value=5)
         self.angle_step_spinbox = tk.Spinbox(postProcessing_frame, from_=1, to=360, textvariable=self.angle_step_value, width=8)
         self.angle_step_spinbox.grid(row=1, column=1, padx=1, pady=5, sticky="w")
 
+        self.step_length_value = tk.DoubleVar(value=1)
+        self.step_length_spinbox = tk.Spinbox(postProcessing_frame, from_=1, to=100, textvariable=self.step_length_value, width=8)
+        self.step_length_spinbox.grid(row=2, column=1, padx=1, pady=5, sticky="w")
+
         # Button to execute the post processing method
         post_processing_button = tk.Button(postProcessing_frame, text="Launch", font=("Arial", 14), command=self.post_processing)
-        post_processing_button.grid(row=2, column=0, columnspan=2, pady=20)
+        post_processing_button.grid(row=3, column=0, columnspan=2, pady=20)
 
         # endregion
     
@@ -141,8 +148,9 @@ class otherPage(tk.Frame):
 
     def post_processing(self):
         angleStep = float(self.angle_step_spinbox.get())
-        print(f"Post processing, parameters : angleStep={angleStep}")
-        self.tree.post_processing(angleStep)
+        stepLength = float(self.step_length_spinbox.get())
+        print(f"Post processing, parameters : angleStep={angleStep}, stepLength={stepLength}")
+        self.tree.post_processing(angleStep, stepLength)
 
         view_configuration = [True, True, False, False, True]
 
